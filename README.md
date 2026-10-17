@@ -1,5 +1,7 @@
 # EdenGuilt
 
+> 仓库根目录是独立的系统验证工程；此前制作的《地脉固化》可玩原型保存在 [`prototype/`](prototype/)。在 Godot 中导入 `prototype/project.godot`，按 F5 运行。原型的操作和流程见 [`prototype/试玩说明.md`](prototype/试玩说明.md)。
+
 横版 2D 类恶魔城项目，使用 **Godot 4.7.2 / GDScript / GL Compatibility**。
 已将相邻 `eden` 项目的引擎配置、图标及文本配置整合到本仓库；原项目保留。
 
