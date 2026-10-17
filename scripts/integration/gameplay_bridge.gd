@@ -5,7 +5,7 @@ extends Node
 var _source: Node
 
 
-func bind_source(source: Node) -> bool:
+func bind_source(source: Node, restore_session: bool = false) -> bool:
 	if not is_instance_valid(source):
 		return false
 	for event: StringName in [&"health_changed", &"score_changed"]:
@@ -16,8 +16,13 @@ func bind_source(source: Node) -> bool:
 		if not _has_property(source, property):
 			push_warning("GameplayBridge: missing property %s" % property)
 			return false
+	if restore_session and not source.has_method(&"restore_stats"):
+		push_warning("GameplayBridge: checkpoint support requires restore_stats(snapshot)")
+		return false
 	unbind_source()
 	_source = source
+	if restore_session:
+		_source.call(&"restore_stats", GameSession.stats_snapshot())
 	_source.connect(&"health_changed", _on_health_changed)
 	_source.connect(&"score_changed", _on_score_changed)
 	if _source.has_signal(&"died"):

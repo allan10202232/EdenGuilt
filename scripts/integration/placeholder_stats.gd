@@ -16,6 +16,14 @@ func _ready() -> void:
 	health = max_health
 
 
+func restore_stats(snapshot: Dictionary) -> void:
+	max_health = maxi(1, int(snapshot.get("max_health", max_health)))
+	health = clampi(int(snapshot.get("health", max_health)), 0, max_health)
+	score = maxi(0, int(snapshot.get("score", 0)))
+	health_changed.emit(health, max_health)
+	score_changed.emit(score)
+
+
 func take_damage(amount: int) -> void:
 	if health <= 0 or amount <= 0 or GameSession.state != GameSession.State.PLAYING:
 		return

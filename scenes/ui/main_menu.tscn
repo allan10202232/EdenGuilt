@@ -54,7 +54,7 @@ layout_mode = 2
 
 [node name="Description" type="Label" parent="Margin/Columns/Identity"]
 layout_mode = 2
-text = "穿过废墟，抵达庭院的另一端。\n横版 2D 探索 · 系统原型"
+text = "借走能力，走向荒芜；交还能力，带伙伴回家。\n横版 2D 探索 · 系统原型"
 theme_override_colors/font_color = Color(0.6, 0.68, 0.69, 1)
 theme_override_constants/line_spacing = 10
 
@@ -93,7 +93,7 @@ text = "声音：开启"
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 theme_override_constants/line_spacing = 8
-text = "A / D 或 ← / →  左右移动\n空格 / W / ↑  跳跃\n金色碎片加分 · 红色尖刺扣血\n抵达绿色门扉获胜"
+text = "A / D 或 ← / →  移动\n空格跳跃 · Shift 快跑 / 冲刺\nQ 护盾 · 鼠标左键光刃\n靠近能力源：E 吸收 / R 交还\n死亡后从场景入口检查点继续\n去程收集，返程交还后回家"
 
 [node name="Note" type="Label" parent="Margin/Columns/Panel/Actions"]
 layout_mode = 2

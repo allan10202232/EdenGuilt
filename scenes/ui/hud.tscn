@@ -66,6 +66,70 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "返回主菜单"
 
+[node name="Abilities" type="PanelContainer" parent="."]
+layout_mode = 1
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 120.0
+offset_right = -24.0
+mouse_filter = 2
+
+[node name="Content" type="VBoxContainer" parent="Abilities"]
+layout_mode = 2
+theme_override_constants/separation = 10
+mouse_filter = 2
+
+[node name="RegionLabel" type="Label" parent="Abilities/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+
+[node name="Slots" type="HBoxContainer" parent="Abilities/Content"]
+layout_mode = 2
+theme_override_constants/separation = 12
+mouse_filter = 2
+
+[node name="DoubleJump" type="Label" parent="Abilities/Content/Slots"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+
+[node name="Dash" type="Label" parent="Abilities/Content/Slots"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+
+[node name="Shield" type="Label" parent="Abilities/Content/Slots"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+
+[node name="LightBlade" type="Label" parent="Abilities/Content/Slots"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+
+[node name="Notice" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 268.0
+offset_right = -24.0
+offset_bottom = 316.0
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 2
+mouse_filter = 2
+
 [node name="Hint" type="Label" parent="."]
 layout_mode = 1
 anchors_preset = 12
@@ -76,8 +140,8 @@ offset_left = 24.0
 offset_top = -48.0
 offset_right = -24.0
 offset_bottom = -16.0
-theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.67, 0.75, 0.72, 1)
-text = "A / D 移动   ·   空格跳跃   ·   收集金色碎片   ·   躲避红色尖刺   ·   到达绿色门扉"
+text = "A/D 移动 · 空格跳跃 · Shift 快跑/冲刺 · Q 护盾 · E 吸收 · R 交还 · 左键光刃\n去程：孤木 → 草原 → 残海；到右端折返，交还三种能力后从孤木左端回家"
+theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
 mouse_filter = 2

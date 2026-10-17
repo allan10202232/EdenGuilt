@@ -5,6 +5,7 @@ signal state_changed(previous: State, current: State)
 signal health_changed(current: int, maximum: int)
 signal score_changed(value: int)
 signal run_finished(result: Dictionary)
+signal checkpoint_resumed
 
 enum State { MAIN_MENU, PLAYING, GAME_OVER, VICTORY }
 
@@ -14,6 +15,7 @@ var max_health: int = 100
 var score: int = 0
 var elapsed_seconds: float = 0.0
 var last_result: Dictionary = {}
+var _death_reason: StringName = &"damage"
 
 
 func _process(delta: float) -> void:
@@ -29,6 +31,8 @@ func start_run() -> void:
 	score = 0
 	elapsed_seconds = 0.0
 	last_result = {}
+	_death_reason = &"damage"
+	WorldProgress.reset_run()
 	health_changed.emit(health, max_health)
 	score_changed.emit(score)
 	_set_state(State.PLAYING)
@@ -40,11 +44,12 @@ func restart_run() -> void:
 
 
 func return_to_menu() -> void:
+	WorldProgress.set_shield_active(false)
 	_set_state(State.MAIN_MENU)
 
 
 func sync_health(current: int, maximum: int) -> void:
-	if state != State.PLAYING:
+	if state != State.PLAYING or WorldProgress.transitioning:
 		return
 	max_health = maxi(1, maximum)
 	health = clampi(current, 0, max_health)
@@ -54,15 +59,32 @@ func sync_health(current: int, maximum: int) -> void:
 
 
 func sync_score(value: int) -> void:
-	if state != State.PLAYING:
+	if state != State.PLAYING or WorldProgress.transitioning:
 		return
 	score = maxi(0, value)
 	score_changed.emit(score)
 
 
-func player_died() -> void:
-	if state == State.PLAYING:
+func player_died(reason: StringName = &"damage") -> void:
+	if state == State.PLAYING and not WorldProgress.transitioning:
+		_death_reason = reason
 		sync_health(0, max_health)
+
+
+func resume_checkpoint() -> void:
+	if state != State.GAME_OVER or not WorldProgress.restore_checkpoint():
+		return
+	health = max_health
+	last_result = {}
+	_death_reason = &"damage"
+	health_changed.emit(health, max_health)
+	score_changed.emit(score)
+	_set_state(State.PLAYING)
+	checkpoint_resumed.emit()
+
+
+func stats_snapshot() -> Dictionary:
+	return {"health": health, "max_health": max_health, "score": score}
 
 
 func complete_level() -> void:
@@ -71,11 +93,13 @@ func complete_level() -> void:
 
 func finish_run(won: bool) -> void:
 	# Only the first terminal event wins; late collisions cannot replace the result.
-	if state != State.PLAYING:
+	if state != State.PLAYING or WorldProgress.transitioning:
 		return
+	WorldProgress.set_shield_active(false)
 	last_result = {
 		"won": won, "health": health, "max_health": max_health,
 		"score": score, "elapsed_seconds": elapsed_seconds,
+		"death_reason": _death_reason, "checkpoint": WorldProgress.checkpoint_name(),
 	}
 	_set_state(State.VICTORY if won else State.GAME_OVER)
 	run_finished.emit(last_result.duplicate())

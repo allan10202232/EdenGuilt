@@ -34,6 +34,29 @@ func _ready() -> void:
 	register_sound(&"jump", _tone(390.0, 0.06))
 	register_sound(&"victory", _tone(1046.5, 0.45))
 	register_sound(&"game_over", _tone(110.0, 0.5))
+	register_sound(&"absorb", _tone(740.0, 0.25))
+	register_sound(&"return", _tone(520.0, 0.3))
+	register_sound(&"double_jump", _tone(585.0, 0.1))
+	register_sound(&"dash", _tone(245.0, 0.09))
+	register_sound(&"shield", _tone(460.0, 0.16))
+	register_sound(&"slash", _tone(320.0, 0.08))
+	register_sound(&"enemy_down", _tone(185.0, 0.1))
+	register_sound(&"checkpoint", _tone(790.0, 0.15))
+	WorldProgress.ability_absorbed.connect(func(_id: StringName) -> void: play_sfx(&"absorb"))
+	WorldProgress.ability_returned.connect(func(_id: StringName) -> void: play_sfx(&"return"))
+	WorldProgress.ability_used.connect(_on_ability_used)
+	WorldProgress.enemy_defeated.connect(func(_id: StringName) -> void: play_sfx(&"enemy_down"))
+	WorldProgress.checkpoint_changed.connect(func() -> void:
+		if GameSession.state == GameSession.State.PLAYING:
+			play_sfx(&"checkpoint")
+	)
+	GameSession.checkpoint_resumed.connect(func() -> void: play_sfx(&"checkpoint"))
+
+
+func _on_ability_used(id: StringName) -> void:
+	var definition := AbilityCatalog.definition(id)
+	if not definition.is_empty():
+		play_sfx(definition.sound, -6.0)
 
 
 func register_sound(id: StringName, stream: AudioStream) -> void:
