@@ -1,2 +1,2 @@
 # EdenGuilt
-A web game
+A New Game 
