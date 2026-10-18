@@ -70,7 +70,30 @@ try {
     $storyArguments += 'res://tests/campaign/story_test.tscn'
     if ($Screenshots) { $storyArguments += @('--', '--screenshots') }
     Invoke-GodotCheck -EngineArguments $storyArguments -LogPath $storyLog -Summary 'STORY'
-    Write-Host "Bilingual opening, NPCs, learning and toxin puzzle passed. Log: $storyLog"
+    Write-Host "Bilingual NPCs, learning and toxin puzzle passed. Log: $storyLog"
+    $openingLog = Join-Path $outputDirectory $(if ($Screenshots) { 'opening-visual.log' } else { 'opening-headless.log' })
+    $openingArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $openingLog)
+    if ($Screenshots) {
+        $openingArguments += @('--rendering-method', 'gl_compatibility')
+    } else {
+        $openingArguments += '--headless'
+    }
+    $openingArguments += 'res://tests/opening_test.tscn'
+    if ($Screenshots) { $openingArguments += @('--', '--screenshots') }
+    Invoke-GodotCheck -EngineArguments $openingArguments -LogPath $openingLog -Summary 'OPENING'
+    Write-Host "Opening cinematic passed. Log: $openingLog"
+
+    $healthLog = Join-Path $outputDirectory $(if ($Screenshots) { 'health-visual.log' } else { 'health-headless.log' })
+    $healthArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $healthLog)
+    if ($Screenshots) {
+        $healthArguments += @('--rendering-method', 'gl_compatibility')
+    } else {
+        $healthArguments += '--headless'
+    }
+    $healthArguments += 'res://tests/health_test.tscn'
+    if ($Screenshots) { $healthArguments += @('--', '--screenshots') }
+    Invoke-GodotCheck -EngineArguments $healthArguments -LogPath $healthLog -Summary 'HEALTH'
+    Write-Host "Life orbs and damage passed. Log: $healthLog"
 
     $testLog = Join-Path $outputDirectory $(if ($Screenshots) { 'phase-one-visual.log' } else { 'phase-one-headless.log' })
     $engineArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $testLog)

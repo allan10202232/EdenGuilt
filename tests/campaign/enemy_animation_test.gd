@@ -93,7 +93,7 @@ func _run() -> void:
 	await _ticks(30)
 	_check(GameSession.health == before and boss._actions.pose == &"windup", "guardian telegraph does not inflict early damage")
 	await _ticks(17)
-	_check(GameSession.health == before-30 and boss._actions.pose == &"strike", "guardian impact animation coincides with real damage")
+	_check(GameSession.health == before-10 and boss._actions.pose == &"strike", "guardian impact animation removes half an orb with real damage")
 	_check(boss._recovery > 0.0 and is_zero_approx(boss.velocity.x), "guardian plants its feet while recovering")
 	boss.queue_free()
 	var crawler := _spawn(level, player, false, "forest_crawler")

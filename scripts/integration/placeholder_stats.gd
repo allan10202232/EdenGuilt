@@ -6,6 +6,9 @@ signal health_changed(current: int, maximum: int)
 signal score_changed(value: int)
 signal died
 
+const LIFE_ORB_COUNT := 5
+const LIFE_HALVES := LIFE_ORB_COUNT * 2
+
 @export var max_health: int = 100
 var health: int = 100
 var score: int = 0
@@ -22,6 +25,11 @@ func restore_stats(snapshot: Dictionary) -> void:
 	score = maxi(0, int(snapshot.get("score", 0)))
 	health_changed.emit(health, max_health)
 	score_changed.emit(score)
+
+
+func take_hit() -> void:
+	# All normal enemy and hazard hits consume exactly half of one life orb.
+	take_damage(maxi(1, ceili(float(max_health) / LIFE_HALVES)))
 
 
 func take_damage(amount: int) -> void:

@@ -23,7 +23,7 @@ func _physics_process(delta: float) -> void:
 	if phase()==2 and is_instance_valid(player):
 		var body:=Rect2(player.global_position-Vector2(14,24),Vector2(28,48))
 		if area.intersects(body):
-			player.hurt(20)
+			player.hurt()
 	queue_redraw()
 
 

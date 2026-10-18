@@ -71,7 +71,7 @@ func _physics_process(delta: float) -> void:
 			_recovery = 0.34
 			if boss:
 				if absf(distance.x) < 255.0 and absf(distance.y) < 85.0:
-					player.hurt(30)
+					player.hurt()
 			else:
 				projectile_fired.emit(global_position+Vector2(_direction*24,-8),_direction)
 	elif _recovery > 0.0:
@@ -95,7 +95,7 @@ func _physics_process(delta: float) -> void:
 			_hop_charge = 0.15
 	move_and_slide()
 	if _hurtbox.overlaps_body(player):
-		player.hurt((25 if boss else 15)+(5 if is_enraged() else 0))
+		player.hurt()
 	queue_redraw()
 
 

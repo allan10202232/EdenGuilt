@@ -16,7 +16,7 @@ func _physics_process(delta: float) -> void:
 		return
 	global_position=destination
 	if is_instance_valid(player) and absf(player.global_position.x-global_position.x)<19.0 and absf(player.global_position.y-global_position.y)<28.0:
-		player.hurt(15)
+		player.hurt()
 		queue_free()
 	queue_redraw()
 

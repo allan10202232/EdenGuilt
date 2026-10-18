@@ -97,9 +97,7 @@ func _campaign_objective() -> String:
 
 
 func _update_health(current: int, maximum: int) -> void:
-	%HealthBar.max_value = maximum
-	%HealthBar.value = current
-	%HealthLabel.text = GameText.t("生命  %d / %d") % [current, maximum]
+	%LifeOrbs.set_health(current, maximum)
 
 
 func _update_score(value: int) -> void:

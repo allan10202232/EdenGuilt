@@ -18,7 +18,6 @@ const CAMPAIGN_SCENES: Dictionary = {
 @onready var _result: Control = $UI/Root/ResultDialog
 var _truth: Control
 var _audit: Control
-var _intro: Control
 var _dialogue: Control
 
 
@@ -37,17 +36,9 @@ func _ready() -> void:
 	_audit=preload("res://scripts/ui/sustainability_report.gd").new()
 	_audit.name="SustainabilityReport"
 	$UI/Root.add_child(_audit)
-	_intro=preload("res://scripts/ui/opening_sequence.gd").new()
-	$UI/Root.add_child(_intro)
 	_dialogue=preload("res://scripts/ui/dialogue.gd").new()
 	$UI/Root.add_child(_dialogue)
-	_menu.start_requested.connect(func() -> void:
-		if campaign_mode:
-			_menu.hide()
-			_intro.present()
-		else: GameSession.start_run()
-	)
-	_intro.finished.connect(func() -> void: GameSession.start_run())
+	_menu.start_requested.connect(func() -> void: GameSession.start_run())
 	WorldProgress.dialogue_requested.connect(func(speaker: String, lines: Array) -> void:
 		_hud.set_interactive(false)
 		_dialogue.present(speaker,lines)
@@ -78,7 +69,6 @@ func _on_state_changed(_previous: int, current: int) -> void:
 			WorldProgress.narrative_active=false
 			WorldProgress.narrative_kind=&""
 			_dialogue.hide()
-			_intro.hide()
 			_clear_level()
 			WorldProgress.finish_scene_load()
 			SoundManager.stop_sfx()

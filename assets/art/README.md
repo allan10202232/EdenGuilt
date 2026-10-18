@@ -31,6 +31,10 @@
 | `animations/hero_red_actions.png` | 红色形态 24 帧动作，6×4 格 |
 | `animations/hero_green_actions.png` | 绿色形态 24 帧动作，6×4 格 |
 | `terrain/biome_atlas.png` | 两列三行图集：森林、垃圾场、矿厂；左列地表，右列填充 |
+| `opening/soul_extractor.png` | 开场第一幕：球形吸魂器 |
+| `opening/eden_city.png` | 开场第二幕：结晶荒漠之上的伊甸环城 |
+| `opening/undercity.png` | 开场第三幕：地下死土矿区与聚落 |
+| `opening/discovery.png` | 开场第四幕：红色形态主角拾起吸魂器 |
 
 PNG 透明通道已在 Godot 实际加载验证。角色与敌人使用 AtlasTexture 的有效像素区域裁边，源 PNG 不改写。
 纹理使用最近邻过滤；前景碰撞来自关卡数据，背景中的装饰平台没有碰撞。
@@ -43,3 +47,6 @@ PNG 透明通道已在 Godot 实际加载验证。角色与敌人使用 AtlasTex
 
 新版三关复用图集：垃圾场用第 2 行、矿场用第 3 行、伊甸园用第 1 行；伊甸守卫暂复用放大的苔藓兽。
 原森林背景保留为可复用美术，不再作为第一关入口。
+
+开场插画使用独立的像素显现/消散材质，不修改原图片。英文旁白由界面绘制，
+不烘焙进插画；窗口缩放时保留图片比例和完整画面。参考图和提示词见 [开场美术记录](../../docs/opening-art-prompts.md)。

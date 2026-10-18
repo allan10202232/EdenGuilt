@@ -275,8 +275,6 @@ func _click(button: Button) -> void:
 		get_viewport().push_input(event,true)
 		await _tick(1)
 	await _tick(3)
-	if app._intro.visible:
-		await _click(app._intro.skip_button)
 
 
 func _snapshot(label: String) -> void:

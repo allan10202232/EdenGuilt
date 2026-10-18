@@ -23,20 +23,10 @@ func _run() -> void:
 	_check(preferences.get_value("display","language","")=="zh_CN","language preference is persisted")
 	picker.item_selected.emit(0)
 	await _ticks(3)
+	_check(app.get_node("LevelRoot").get_child_count()==0 and GameSession.elapsed_seconds==0,"main menu has no hidden gameplay before Start")
 	await _click(app._menu.get_node("%StartButton"))
-	_check(app._intro.visible and GameSession.state==GameSession.State.MAIN_MENU,"Start shows opening before creating gameplay")
-	_check(app.get_node("LevelRoot").get_child_count()==0 and GameSession.elapsed_seconds==0,"opening cannot advance gameplay or carbon")
-	await _ticks(35)
-	await _capture("story-01-opening-junkyard")
-	await _click(app._intro.next_button)
-	_check(app._intro._chapter==1,"opening moves to the cavern act")
-	await _capture("story-02-opening-cavern")
-	await _click(app._intro.next_button)
-	_check(app._intro._chapter==2,"opening introduces Eden City")
-	app._intro.skip_button.grab_focus()
-	await _key(KEY_ENTER)
 	await _ticks(30)
-	_check(GameSession.state==GameSession.State.PLAYING and app.get_node("LevelRoot").get_child_count()==1,"Skip enters one playable Junkyard")
+	_check(GameSession.state==GameSession.State.PLAYING and app.get_node("LevelRoot").get_child_count()==1,"Start enters one playable Junkyard without replaying the replaced opening")
 	_check(_level().definition.title=="Junkyard" and _level().growth_points.size()>20,"first level has localized title and dispersed ground life")
 	await _place(Vector2(260,596))
 	await _key(KEY_T)
@@ -101,6 +91,14 @@ func _run() -> void:
 	await _place(Vector2(1710,596))
 	await _ticks(70)
 	_check(is_zero_approx(_level().toxin),"leaving toxic fog clears toxin burden")
+	var health_before_toxin:=GameSession.health
+	_level().toxin=80.0
+	_level()._toxin_tick=1.0
+	_player()._invulnerability=0.0
+	await _ticks(2)
+	_check(GameSession.health==health_before_toxin-10,"high toxin uses the new half-orb damage rule without an invalid hurt call")
+	_level().toxin=0.0
+	_player().stats.heal(10)
 	for index in 3:
 		await _place(_level().definition.mineral_nodes[index].point+Vector2(0,6))
 		_player()._mineral_recovery=0
