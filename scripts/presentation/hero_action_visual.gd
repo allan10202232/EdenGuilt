@@ -124,6 +124,9 @@ func _process(delta: float) -> void:
 	_clock+=delta
 	_phase_clock+=delta
 	_pose_left=maxf(0.0,_pose_left-delta)
+	# A guard pose must not pin the body while its actual motion continues.
+	if _pose==&"shield_raise" and (not WorldProgress.shield_active or not actor.is_on_floor() or absf(actor.velocity.x)>5):
+		_pose_left=0.0
 	_land_time=maxf(0.0,_land_time-delta)
 	_turn_time=maxf(0.0,_turn_time-delta)
 	for effect in _effects: effect.life-=delta
@@ -163,7 +166,7 @@ func _process(delta: float) -> void:
 		using_motion = true
 		action = _pose
 		sprite.frame = POSES[action]
-	elif WorldProgress.shield_active:
+	elif WorldProgress.shield_active and actor.is_on_floor() and absf(actor.velocity.x)<=5:
 		action=&"shield"
 		sprite.frame=19
 	elif not actor.is_on_floor():

@@ -87,6 +87,12 @@ try {
     Invoke-GodotCheck -EngineArguments $uiArguments -LogPath $uiLog -Summary 'UI REFRESH'
     Write-Host "Compact HUD, settings and first-use tutorials passed. Log: $uiLog"
 
+    $interactionLog = Join-Path $outputDirectory 'interactions.log'
+    $interactionArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $interactionLog)
+    if (-not $Screenshots) { $interactionArguments += '--headless' }
+    $interactionArguments += 'res://tests/interactions_test.tscn'
+    Invoke-GodotCheck -EngineArguments $interactionArguments -LogPath $interactionLog -Summary 'INTERACTIONS'
+
     foreach ($mineSuite in @(@('mine_mechanics_test', 'MINE MECHANICS'), @('mine_challenge_test', 'MINE CHALLENGE'), @('mine_polish_test', 'MINE POLISH'))) {
         $mineLog = Join-Path $outputDirectory ($mineSuite[0] + '.log')
         $mineArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $mineLog)

@@ -1,0 +1,7 @@
+{
+  "method": "Built-in image_gen; precise-object-edit from the existing atlas",
+  "reference": "assets/art/generated/mine_challenge/mine_detail_atlas.png",
+  "output": "assets/art/generated/mine_challenge/mine_exit_unlit.png",
+  "transparent_background": true,
+  "prompt": "Use case: precise-object-edit. Asset: transparent pixel-art mine exit sprite for the same 2D game. The reference is a 4x4 sprite atlas: use ONLY the stone-and-timber arched doorway at third row, fourth column. Produce this doorway alone as a tight isolated transparent sprite, front-facing side-scroller view, approximately square silhouette. Preserve its chipped cool violet rock arch, rusted timber braces, pale violet crystal clusters and soft white-purple portal opening. Remove the hanging lantern, its chain fixture and its warm yellow glow completely, replace that small area with the same cool purple rocks. No lanterns, lamps, torches, candles or other light fixtures anywhere. Keep the reference's crisp authored pixel art and dark outlines; no smooth illustration, no text, no extra props, no floor/background outside the doorway silhouette. The doorway should fill the canvas with only a small transparent margin."
+}

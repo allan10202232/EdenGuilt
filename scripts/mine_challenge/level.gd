@@ -17,6 +17,7 @@ const CHECKPOINTS=[Vector2(180,1778),Vector2(560,1778),Vector2(1200,1428),Vector
 const REGIONS=[Rect2(70,1650,490,200),Rect2(610,1545,1130,330),Rect2(1100,1300,720,170),Rect2(1820,460,620,1400),Rect2(2450,510,870,240),Rect2(2450,1450,2000,340),Rect2(4480,430,850,1290),Rect2(5290,240,280,180)]
 var environment: Node2D
 var mine_audio: Node
+var interaction_hints: Node2D
 var player: CharacterBody2D
 var vents: Array[Node2D]=[]
 var shaft_vents: Array[Node2D]=[]
@@ -81,6 +82,7 @@ func _ready() -> void:
 	add_child(player)
 	_read_progress()
 	_build_hud()
+	_build_interaction_hints()
 	if not _campaign:
 		var subtitles:=preload("res://scripts/ui/dialogue.gd").new()
 		_hud.add_child(subtitles)
@@ -196,7 +198,7 @@ func activate_stage(stage: int, force: bool=false) -> void:
 	_refresh_text()
 	var id:="mine_stage_%d"%stage
 	if GuideScript.claim(id):
-		var hints=["Space: jump, then jump again. E / J: mineralization pulse.","Cast in mid-air to turn gas into a temporary bridge.","Push the crate onto the plate. Keep its weight there to power the shaft.","Jump, double jump, mineralize, land. Every relay is temporary gas-made rock.","T or left click: operate the lever. The hatch opens below it.","Keep moving! The bridge collapses from left to right.","Narrow platforms last 2.8 seconds. Land to refresh Double Jump.","Reach the illuminated doorway."]
+		var hints=["Space: jump, then jump again. Toxic gas can become temporary crystal footholds.","Cast in mid-air to turn gas into a temporary bridge.","Push the crate onto the plate. Keep its weight there to power the shaft.","Jump, double jump, mineralize, land. Every relay is temporary gas-made rock.","Redirect the overhead gas pipe to open the descent hatch.","Keep moving! The bridge collapses from left to right.","Narrow platforms last 2.8 seconds. Land to refresh Double Jump.","Reach the illuminated doorway."]
 		_tutorial_text(hints[stage-1])
 
 func stage_name() -> String:
@@ -225,6 +227,25 @@ func _redirect_gas(active: bool) -> void:
 	_trapdoor.get_child(0).set_deferred(&"disabled",active)
 	_save_progress()
 	queue_redraw()
+
+func _build_interaction_hints() -> void:
+	interaction_hints=preload("res://scripts/presentation/interaction_hints.gd").new()
+	interaction_hints.actor=player
+	add_child(interaction_hints)
+	interaction_hints.offer(func() -> Vector2: return lever.position,func() -> String: return "T",115,Vector2(0,-100))
+	interaction_hints.offer(func() -> Vector2: return Vector2(280,1778),func() -> String: return "T",115,Vector2(-24,-84))
+	interaction_hints.offer(func() -> Vector2: return Vector2(280,1778),func() -> String:
+		return "R" if _returning and WorldProgress.has_ability(&"mineralization") else ""
+	,150,Vector2(24,-84))
+	for node: Node2D in vents:
+		interaction_hints.offer(func() -> Vector2: return node.position,func() -> String: return _vent_hint_key(node),player.pulse_radius,Vector2(0,-96))
+
+func _vent_hint_key(node: Node2D) -> String:
+	if _returning or not node.powered or is_instance_valid(node.platform) or player.cooldown>0: return ""
+	var distance:=player.position.distance_to(node.position)
+	for other in vents:
+		if other!=node and other.powered and not is_instance_valid(other.platform) and player.position.distance_to(other.position)<distance: return ""
+	return "E"
 
 func interact() -> void:
 	if player.position.distance_to(lever.position)<115:

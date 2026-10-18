@@ -50,7 +50,7 @@ func _process(_delta: float) -> void:
 	var info: Dictionary = ScrapyardLayout.SECTIONS[level.current_section]
 	section_label.text = "%d / 6  %s" % [level.current_section + 1, ScrapyardLayout.text(info.name, info.zh)]
 	var ready: bool = level.player.air_jump_available()
-	jump_label.text = ScrapyardLayout.text("AIR JUMP  ", "二段跳  ") + (ScrapyardLayout.text("RETURNED · rescue path open", "已交还 · 返程通道已铺设") if WorldProgress.route_open(&"double_jump") else ScrapyardLayout.text("READY  ●", "可用  ●") if ready else ScrapyardLayout.text("USED · land to recharge", "已使用 · 落地恢复") if WorldProgress.has_ability(&"double_jump") else ScrapyardLayout.text("LOCKED · E at oasis", "未获得 · 绿洲处按 E"))
+	jump_label.text = ScrapyardLayout.text("AIR JUMP  ", "二段跳  ") + (ScrapyardLayout.text("RETURNED · rescue path open", "已交还 · 返程通道已铺设") if WorldProgress.route_open(&"double_jump") else ScrapyardLayout.text("READY  ●", "可用  ●") if ready else ScrapyardLayout.text("USED · land to recharge", "已使用 · 落地恢复") if WorldProgress.has_ability(&"double_jump") else ScrapyardLayout.text("LOCKED · find the living oasis", "未获得 · 寻找生命绿洲"))
 	jump_label.modulate = Color("a4ffd3") if ready else Color("d9c8a0")
 	deaths_label.text = ScrapyardLayout.text("DEATHS / RESPAWNS  %d   ·   CP %d / 6", "死亡 / 重生  %d   ·   检查点 %d / 6") % [WorldProgress.scrapyard_deaths, level.current_section + 1]
 	hint_label.text = ScrapyardLayout.text(info.tip, info.hint) + "\n" + ScrapyardLayout.text("CO₂ %.0f kg gross · %.0f kg stored*", "CO₂ 累计 %.0f kg · 固定 %.0f kg*") % [CarbonLedger.gross_kg, CarbonLedger.stored_kg]

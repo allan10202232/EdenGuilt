@@ -101,10 +101,12 @@ controller and extraction systems used elsewhere in the game.
 ## Finished presentation pass
 
 The playable route retains its geometry, timings and 25 gas-based footholds.
-The mine now uses the unchanged original Scenario2 painting plus the existing
-mine-middle panorama, authored rock/timber terrain and a new 16-piece matching
-alpha sprite atlas. A parallax cavern backdrop, foreground stalactites, lanterns,
-hoists, pumps, gas pipes, resident and textured exit replace the draft drawings.
+The mine uses a lantern-free Scenario2 painting with its matching mine-middle
+panorama, authored rock/timber terrain and a 16-piece matching alpha sprite atlas.
+Original source paintings remain in the repository. A parallax cavern backdrop,
+foreground stalactites, hoists, pumps, gas pipes, resident and textured exit replace
+the draft drawings. Decorative and checkpoint lights are removed; checkpoints
+remain automatic. Nearby usable units display a round contextual key medallion.
 
 The player renders the original HeroActionVisual red/green atlases and original
 idle/run/jump/double-jump/landing/mineralization/hurt/respawn/slash motions, with

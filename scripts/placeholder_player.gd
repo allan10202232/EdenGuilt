@@ -50,6 +50,10 @@ var grounding: ActorGrounding
 func _ready() -> void:
 	combat.setup(self, _can_melee_attack)
 	combat.attack_started.connect(func(_move: MeleeAttackProfile) -> void:
+		# Attacking lowers the guard; holding Q cannot resurrect a cancelled cast.
+		_shield_time=0.0
+		impact_pause=0.0
+		WorldProgress.set_shield_active(false)
 		WorldProgress.report_ability_used(&"light_blade")
 		SoundManager.play_sfx(&"slash_reach" if _move.id == &"reach_melee" else &"slash_close", -8.0)
 	)
@@ -200,6 +204,7 @@ func _physics_process(delta: float) -> void:
 			_shield_time=1.4
 			_shield_recovery=2.2
 			combat.cancel()
+			impact_pause=0.0
 			if _art!=null: _art.play_action(&"shield_raise",0.10)
 			WorldProgress.report_ability_used(&"shield")
 		WorldProgress.set_shield_active(Input.is_action_pressed(&"eden_shield") and _shield_time>0.0)

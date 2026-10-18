@@ -10,7 +10,6 @@ const CRUSHER_SCENE := preload("res://scenes/parkour/hydraulic_crusher.tscn")
 var current_section := 0
 var platforms: Array[ScrapPlatform] = []
 var crushers: Array[HydraulicCrusher] = []
-var upper_pickup: Area2D
 var _respawn_guard := 0.0
 var _rescue_path := false
 var _rescue_shape := PackedVector2Array()
@@ -80,11 +79,7 @@ func _ready() -> void:
 	entrance.get_child(0).shape.size = Vector2(40,180)
 	_exit_area.position = Vector2(9440,270)
 	_exit_area.get_child(0).shape.size = Vector2(100,130)
-	upper_pickup = _area(Rect2(5560,163,40,50),"RecoveredBiochar")
-	upper_pickup.body_entered.connect(_collect_upper_reward)
-	upper_pickup.visible = not WorldProgress.is_collected(&"lone_tree/upper_biochar")
-	_label(Vector2(4660,125),ScrapyardLayout.text("↑ HIGHER RISK · HIGHER REWARD", "↑ 高处挑战 · 高额奖励"),17,Color("9eefd1"))
-	_label(Vector2(5460,100),ScrapyardLayout.text("RECOVERED BIOCHAR\n+500 score · +25 kg stored*", "回收生物炭\n+500 分 · 固碳 +25 kg*"),14,Color("e9efad"))
+	_label(Vector2(4660,125),ScrapyardLayout.text("↑ UPPER ROUTE", "↑ 高处路线"),17,Color("9eefd1"))
 	_label(Vector2(6580,605),ScrapyardLayout.text("DELAY YOUR AIR JUMP", "延迟二段跳 · 等待回收"),15,Color("ffb38d"))
 	parkour_hud = ParkourHUD.new()
 	parkour_hud.level = self
@@ -125,20 +120,12 @@ func respawn_player(_reason: StringName = &"toxic_drop") -> void:
 	if not WorldProgress.can_play() or _respawn_guard > 0.0: return
 	_respawn_guard = 0.18
 	WorldProgress.scrapyard_deaths += 1
-	# No scene reload, no GAME_OVER state and no rollback of abilities / rewards.
+	# No scene reload, no GAME_OVER state and no rollback of ability/carbon history.
 	WorldProgress.restore_checkpoint()
 	player.reset_at_checkpoint(WorldProgress.spawn_position)
 	player.get_node("Camera2D").reset_smoothing()
 	for platform in platforms: platform.reset_platform()
 	for crusher in crushers: crusher.reset_hazard()
-
-func _collect_upper_reward(body: Node2D) -> void:
-	if body != player or not WorldProgress.can_play(): return
-	if WorldProgress.collect_once(&"lone_tree/upper_biochar"):
-		player.stats.add_score(500)
-		CarbonLedger.store_carbon(&"lone_tree/biochar_storage",25.0)
-		upper_pickup.hide()
-		WorldProgress.set_notice(ScrapyardLayout.text("Recovered biochar: +500 score, +25 kg carbon stored (game model). Gross emissions remain recorded.", "回收生物炭：+500 分、固碳 +25 kg（游戏模型）。累计排放仍完整保留。"))
 
 func _build_rescue_path() -> void:
 	if _rescue_path: return
@@ -173,10 +160,6 @@ func _draw() -> void:
 		draw_rect(Rect2(x+7,y+18+sin(x)*10,6,6),Color("64b648"))
 	for info in ScrapyardLayout.SECTIONS:
 		draw_line(Vector2(info.start,-100),Vector2(info.start,900),Color(0.6,0.8,0.7,0.08),2)
-	if is_instance_valid(upper_pickup) and upper_pickup.visible:
-		var point := Vector2(5580,188+sin(_clock*3)*4)
-		draw_colored_polygon(PackedVector2Array([point+Vector2(0,-18),point+Vector2(14,0),point+Vector2(0,18),point+Vector2(-14,0)]),Color("aaffbd"))
-		draw_arc(point,26,0,TAU,16,Color(0.6,1,0.7,0.5),2)
 	for index in maxi(0,_rescue_shape.size()-1):
 		draw_line(_rescue_shape[index]+Vector2(0,8),_rescue_shape[index+1]+Vector2(0,8),Color("3b6e5d"),20)
 		draw_line(_rescue_shape[index],_rescue_shape[index+1],Color("a6e5a3"),5)

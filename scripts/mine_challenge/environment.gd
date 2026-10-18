@@ -1,14 +1,15 @@
 extends Node2D
-## Scenario2's original painting, authored terrain and textured machinery.
+## Scenario2 painting with only hanging lights removed; original sources retained.
 ## Scenery never adds collision: the eight-stage route stays identical.
 const Art=preload("res://scripts/mine_challenge/mine_art.gd")
-const ORIGINAL=preload("res://assets/art/originals/scenarios/Scenario2.jpg")
+const ORIGINAL=preload("res://assets/art/generated/mine_challenge/Scenario2_unlit.png")
 const EXTENSION=preload("res://assets/art/generated/scenarios/mine_middle.png")
 const TERRAIN=preload("res://assets/art/generated/scenarios/mine_terrain.png")
+const EXIT_ART=preload("res://assets/art/generated/mine_challenge/mine_exit_unlit.png")
 var level: Node2D
 var _clock:=0.0
 var _resident: Texture2D
-var _lamps: Array[Vector2]=[Vector2(130,1630),Vector2(1370,1640),Vector2(1160,1290),Vector2(1780,1320),Vector2(1940,1550),Vector2(2360,1250),Vector2(1940,990),Vector2(2360,710),Vector2(2550,570),Vector2(3190,570),Vector2(2490,1570),Vector2(4480,1520),Vector2(5310,240)]
+var _exit_art: AtlasTexture
 
 class Foreground extends Node2D:
 	var scenery: Node2D
@@ -19,6 +20,9 @@ func _ready() -> void:
 	z_index=-20
 	texture_filter=CanvasItem.TEXTURE_FILTER_NEAREST
 	_resident=CampaignLevels.trimmed_texture("characters/hero_green")
+	_exit_art=AtlasTexture.new()
+	_exit_art.atlas=EXIT_ART
+	_exit_art.region=Rect2(EXIT_ART.get_image().get_used_rect())
 	var foreground:=Foreground.new()
 	foreground.scenery=self
 	foreground.z_index=28
@@ -55,16 +59,6 @@ func _draw() -> void:
 	var pipes:=PackedVector2Array([Vector2(1720,1450),Vector2(1720,410),Vector2(2820,410),Vector2(2820,500),Vector2(5000,500),Vector2(5000,1700)])
 	for index in pipes.size()-1:
 		_pipe(pipes[index],pipes[index+1],level._persisted_valve if index<2 else level.lever.active)
-	for point in _lamps:
-		_glow(point+Vector2(0,32),90,Color(1.0,0.65,0.24,0.13))
-		Art.draw_at(self,10,Rect2(point-Vector2(12,22),Vector2(24,68)))
-	# Checkpoints use real hanging lanterns instead of colored flag triangles.
-	for index in 8:
-		var point: Vector2=level.CHECKPOINTS[index]+Vector2(-20,22)
-		var active: bool=index+1<=level.current_stage
-		Art.draw_at(self,10,Rect2(point-Vector2(13,74),Vector2(26,74)),Color.WHITE if active else Color(0.46,0.45,0.56))
-		if active: _glow(point-Vector2(0,22),43,Color(1,0.71,0.34,0.15))
-		GothicSkin.draw_text(self,preload("res://assets/ui_theme.tres").default_font,point+Vector2(-5,-83),str(index+1),15)
 	# Existing resident artwork is anchored at the same conversational position.
 	if _resident!=null:
 		var size:=_resident.get_size()*72.0/_resident.get_height()
@@ -72,7 +66,7 @@ func _draw() -> void:
 	Art.draw_at(self,5,Rect2(308,1690,188,54),Color(0.75,0.70,0.65))
 	Art.draw_at(self,3,Rect2(387,1740,18,60),Color(0.55,0.50,0.45))
 	GothicSkin.draw_text(self,preload("res://assets/ui_theme.tres").default_font,Vector2(320,1722),GameText.t("碳矿化"),13)
-	Art.draw_at(self,11,Rect2(5354,170,200,230))
+	draw_texture_rect(_exit_art,Rect2(5354,170,200,230),false)
 	_glow(Vector2(5450,322),110,Color(0.72,0.79,1.0,0.15))
 	if level._returning: _return_walkway()
 	# Dust and vapor are sparse enough to preserve jump and platform readability.

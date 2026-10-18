@@ -23,7 +23,8 @@ func _ready() -> void:
 	_refresh()
 
 func _refresh() -> void:
-	_prompt.text=GameText.t("交谈")
+	# The level's circular T medallion owns the proximity affordance.
+	_prompt.text=""
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(player): return

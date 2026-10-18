@@ -37,6 +37,7 @@ var toxin: float = 0.0
 var _toxin_tick: float = 0.0
 var _filter_gate: StaticBody2D
 var _signs: Array[Dictionary] = []
+var interaction_hints: Node2D
 
 
 func _ready() -> void:
@@ -120,8 +121,6 @@ func _ready() -> void:
 	for index in definition.mineral_nodes.size():
 		var node: Dictionary=definition.mineral_nodes[index]
 		_label(node.point+Vector2(-55,-80),GameText.t("封印 %s")%[["I","II","III"][index]],14,Color(0.7,0.9,0.48))
-	if region_id==&"lone_tree":
-		_label(Vector2(80,535),GameText.t("灯火：检查点"),13)
 	var exit_label:=_label(exit_point+Vector2(-110,-115),GameText.t("真相档案 →") if region_id==&"remnant_sea" else "EXIT →" if region_id==&"lone_tree" else GameText.t("下一关 →"),17)
 	if region_id==&"remnant_sea":
 		exit_label.name="RescueLabel"
@@ -137,6 +136,7 @@ func _ready() -> void:
 	foreground.region = region_id
 	add_child(foreground)
 	_refresh_world()
+	_build_interaction_hints()
 	# A playable campaign needs a starting weapon; formal acquisition remains configurable.
 	if WorldProgress.ability_state(&"light_blade")==WorldProgress.AbilityState.UNAVAILABLE:
 		WorldProgress.borrow_ability(&"light_blade")
@@ -144,9 +144,40 @@ func _ready() -> void:
 	queue_redraw()
 
 
+func _build_interaction_hints() -> void:
+	interaction_hints=preload("res://scripts/presentation/interaction_hints.gd").new()
+	interaction_hints.actor=player
+	add_child(interaction_hints)
+	interaction_hints.offer(func() -> Vector2: return npc.position,func() -> String: return "T",110)
+	for id: StringName in oases:
+		var source: Vector2=definition.secondary_source if id==definition.get("secondary_ability",&"") else definition.source
+		interaction_hints.offer(func() -> Vector2: return source,func() -> String:
+			if WorldProgress.core_reversed and WorldProgress.has_ability(id): return "R"
+			return "E" if WorldProgress.ability_state(id)==WorldProgress.AbilityState.UNAVAILABLE and player.is_on_floor() else ""
+		,108,Vector2(-30,-85))
+	if region_id==&"remnant_sea":
+		interaction_hints.offer(func() -> Vector2: return definition.exit,func() -> String:
+			return "R" if WorldProgress.core_reversed and not WorldProgress.repaired_regions.has(region_id) else ""
+		,140,Vector2(0,-90))
+		for wall: Rect2 in definition.dark_walls:
+			var point:=Vector2(wall.get_center().x,wall.end.y-24)
+			interaction_hints.offer(func() -> Vector2: return point,func() -> String:
+				return "F" if WorldProgress.has_ability(&"black_pierce") and player._pierce_recovery<=0 and not WorldProgress.repaired_regions.has(region_id) else ""
+			,245)
+	for index in definition.mineral_nodes.size():
+		var point: Vector2=definition.mineral_nodes[index].point
+		interaction_hints.offer(func() -> Vector2: return point,func() -> String:
+			if not WorldProgress.has_ability(&"mineralization") or player._mineral_recovery>0: return ""
+			if index>0 and not WorldProgress.is_collected(_entity_id("mineral_%d"%(index-1))): return ""
+			return "C" if not WorldProgress.is_collected(_entity_id("mineral_%d"%index)) else ""
+		,145)
+
 func _process(delta: float) -> void:
 	# Camera movement and resizing must redraw the panorama even during dialogue.
 	queue_redraw()
+	_source_label.visible=WorldProgress.can_play() and player.position.distance_to(definition.source)<108 and (WorldProgress.ability_state(definition.ability)==WorldProgress.AbilityState.UNAVAILABLE or WorldProgress.core_reversed and WorldProgress.has_ability(definition.ability))
+	if _secondary_label!=null:
+		_secondary_label.visible=WorldProgress.can_play() and player.position.distance_to(definition.secondary_source)<108 and (WorldProgress.ability_state(definition.secondary_ability)==WorldProgress.AbilityState.UNAVAILABLE or WorldProgress.core_reversed and WorldProgress.has_ability(definition.secondary_ability))
 	for signpost in _signs:
 		signpost.label.visible=signpost.kind==1 and not WorldProgress.narrative_active and not WorldProgress.extraction_active and _clock<5.0
 	if not WorldProgress.can_play():
@@ -300,7 +331,7 @@ func _label_mission_return() -> void:
 	# Entrance and exit labels are world-space signposts, never collidable art.
 	var rescue := get_node_or_null("RescueLabel") as Label
 	if rescue != null:
-		rescue.text=GameText.t("R 居民共建 · 向左返程") if WorldProgress.returning else GameText.t("真相档案 →")
+		rescue.text=GameText.t("真相档案 →")
 
 
 func _interact_source(point: Vector2,ability: StringName) -> void:
@@ -513,10 +544,6 @@ func _draw() -> void:
 		draw_rect(Rect2(3900,350,20,150),Color(0.28,0.36,0.15,0.9))
 		for index in 3:
 			draw_circle(Vector2(3910,380+index*40),6,Color(0.66,0.9,0.45) if WorldProgress.is_collected(_entity_id("mineral_%d"%index)) else Color(0.17,0.19,0.11))
-	for point: Vector2 in _checkpoints:
-		draw_line(point+Vector2(0,24),point-Vector2(0,35),Color(0.3,0.28,0.23),7)
-		draw_circle(point-Vector2(0,42),10,Color(0.95,0.66,0.29,0.15))
-		draw_circle(point-Vector2(0,42),4,Color(1.0,0.77,0.4))
 	var end: Vector2=definition.exit
 	draw_rect(Rect2(end-Vector2(30,55),Vector2(60,105)),Color(0.035,0.06,0.07,0.85))
 	draw_rect(Rect2(end-Vector2(30,55),Vector2(60,105)),definition.accent,false,3)

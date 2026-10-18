@@ -142,6 +142,8 @@ func _run() -> void:
 	player().velocity = Vector2.ZERO
 	await ticks(4)
 	var lift: ScrapPlatform = level().platforms.filter(func(p: ScrapPlatform) -> bool: return p is MagnetLift)[0]
+	var upper_score := GameSession.score
+	var upper_stored := CarbonLedger.stored_kg
 	await leap(Vector2.ZERO,lift)
 	for frame in 144:
 		if lift.position.y<250: break
@@ -149,12 +151,12 @@ func _run() -> void:
 	for point: Vector2 in ScrapyardLayout.UPPER:
 		await leap(point)
 		if point.x==5580:
-			check(GameSession.score==500 and CarbonLedger.stored_kg==25,"upper risky route awards the recovered biochar once")
+			check(GameSession.score==upper_score and CarbonLedger.stored_kg==upper_stored and level().find_children("RecoveredBiochar","Area2D",true,false).is_empty(),"upper route has no coin-style pickup, free score or storage reward")
 	await capture("09-upper-route")
 	var reward_gross := CarbonLedger.gross_kg
 	level().respawn_player()
 	await ticks(14)
-	check(WorldProgress.is_collected(&"lone_tree/upper_biochar") and CarbonLedger.stored_kg==25 and CarbonLedger.gross_kg==reward_gross,"death preserves reward and cannot roll back carbon history")
+	check(CarbonLedger.stored_kg==upper_stored and CarbonLedger.gross_kg==reward_gross,"death cannot fabricate pickup rewards or roll back carbon history")
 	await finish()
 
 func crusher_safety_cases() -> void:
