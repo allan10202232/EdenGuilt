@@ -316,6 +316,10 @@ func _action(action: StringName,held: bool=false) -> void:
 	if not held:
 		Input.action_release(action)
 		await _physics(1)
+	if action == &"eden_absorb":
+		var deadline := Time.get_ticks_msec() + 5000
+		while WorldProgress.extraction_active and Time.get_ticks_msec() < deadline:
+			await _physics(1)
 
 
 func _physics(count: int) -> void:

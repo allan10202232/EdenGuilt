@@ -19,7 +19,7 @@ var _death_reason: StringName = &"damage"
 
 
 func _process(delta: float) -> void:
-	if state == State.PLAYING and not WorldProgress.narrative_active:
+	if state == State.PLAYING and not WorldProgress.narrative_active and not WorldProgress.extraction_active:
 		elapsed_seconds += delta
 
 

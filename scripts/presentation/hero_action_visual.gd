@@ -5,6 +5,9 @@ extends Node2D
 
 const RED: Texture2D = preload("res://assets/art/generated/animations/hero_red_actions.png")
 const GREEN: Texture2D = preload("res://assets/art/generated/animations/hero_green_actions.png")
+const EXTRACTION: Texture2D = preload("res://assets/art/generated/animations/hero_extract_actions.png")
+const EXTRACTION_FEET := [487, 488, 488, 454, 455, 452]
+const EXTRACTION_FOCUS := [Vector2(2, 2), Vector2(21, 2), Vector2(26, 19), Vector2(27, 1), Vector2(21, -18), Vector2(20, 2)]
 const POSES := {&"jump":8, &"double_jump":9, &"fall":10, &"land":11, &"channel":20,
 	&"shield_raise":18, &"shield":19, &"mineralization":20, &"black_pierce":21,
 	&"hurt":22, &"death":23}
@@ -14,6 +17,7 @@ const RED_FEET := [242,242,242,242,242,242,254,254,215,249,255,254,233,233,233,2
 const GREEN_FEET := [247,247,247,247,247,247,255,255,221,255,252,255,234,234,234,235,234,235,220,221,224,221,220,215]
 var actor: CharacterBody2D
 var sprite: Sprite2D
+var extraction_sprite: Sprite2D
 var action: StringName = &"idle"
 var green_form := false
 var _clock := 0.0
@@ -36,6 +40,14 @@ func bind(player: CharacterBody2D) -> void:
 	sprite.scale=Vector2.ONE*0.36
 	sprite.position=Vector2(0,-20)
 	add_child(sprite)
+	extraction_sprite = Sprite2D.new()
+	extraction_sprite.texture = EXTRACTION
+	extraction_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	extraction_sprite.hframes = 3
+	extraction_sprite.vframes = 2
+	extraction_sprite.scale = Vector2.ONE * 0.18
+	extraction_sprite.hide()
+	add_child(extraction_sprite)
 	set_form(WorldProgress.core_reversed)
 	for attack in [actor.combat.close_attack,actor.combat.reach_attack]:
 		attack.phase_changed.connect(func(_next: int) -> void: _phase_clock=0.0)
@@ -47,7 +59,10 @@ func bind(player: CharacterBody2D) -> void:
 		_effects.append({"point":hit.position,"life":0.18,"duration":0.18,"kind":&"hit"})
 	)
 	for event: Signal in [WorldProgress.ability_absorbed,WorldProgress.ability_returned]:
-		event.connect(func(_id: StringName) -> void: play_action(&"channel",0.28))
+		event.connect(func(_id: StringName) -> void:
+			if not actor.extracting:
+				play_action(&"channel",0.28)
+		)
 	GameSession.state_changed.connect(_on_state)
 
 func set_form(green: bool) -> void:
@@ -69,12 +84,26 @@ func _on_state(_previous: int,current: int) -> void:
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(actor) or not actor.is_inside_tree(): return
-	if not _dead and not WorldProgress.can_play(): return
+	if not _dead and not WorldProgress.can_play() and not actor.extracting: return
 	_clock+=delta
 	_phase_clock+=delta
 	_pose_left=maxf(0.0,_pose_left-delta)
 	for effect in _effects: effect.life-=delta
 	_effects=_effects.filter(func(entry: Dictionary) -> bool: return entry.life>0.0)
+	if actor.extracting and not _dead:
+		action = &"extract"
+		_pose_left = 0.0
+		var progress: float = actor.extraction_progress
+		var frame := 0 if progress < 0.12 else 1 if progress < 0.24 else 2 if progress < 0.45 else 3 if progress < 0.68 else 4 if progress < 0.9 else 5
+		sprite.hide()
+		extraction_sprite.show()
+		extraction_sprite.frame = frame
+		extraction_sprite.flip_h = actor._facing < 0
+		extraction_sprite.position.y = 24.0 - (EXTRACTION_FEET[frame] - 256) * 0.18
+		queue_redraw()
+		return
+	extraction_sprite.hide()
+	sprite.show()
 	var facing: float=actor._facing
 	var attack: MeleeAttack=_visible_attack()
 	if _dead:
@@ -110,6 +139,11 @@ func _process(delta: float) -> void:
 	var feet: int=(GREEN_FEET if green_form else RED_FEET)[sprite.frame]
 	sprite.position.y=24.0-(feet-128)*0.36 if actor.is_on_floor() or _dead else -20.0
 	queue_redraw()
+
+func extraction_focus() -> Vector2:
+	var point: Vector2 = EXTRACTION_FOCUS[extraction_sprite.frame]
+	point.x *= actor._facing
+	return actor.global_position + point
 
 func _visible_attack() -> MeleeAttack:
 	for attack: MeleeAttack in [actor.combat.close_attack,actor.combat.reach_attack]:
