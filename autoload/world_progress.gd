@@ -25,6 +25,7 @@ var transitioning: bool = false
 var campaign_rules: bool = true
 var narrative_active: bool = false
 var narrative_kind: StringName = &""
+var extraction_active: bool = false
 var truth_revealed: bool = false
 var core_reversed: bool = false
 var ending_choice: StringName = &""
@@ -51,6 +52,7 @@ func reset_run() -> void:
 	transitioning = false
 	narrative_active = false
 	narrative_kind = &""
+	extraction_active = false
 	truth_revealed = false
 	core_reversed = false
 	ending_choice = &""
@@ -245,7 +247,7 @@ func is_collected(id: StringName) -> bool:
 
 
 func can_play() -> bool:
-	return GameSession.state == GameSession.State.PLAYING and not transitioning and not narrative_active
+	return GameSession.state == GameSession.State.PLAYING and not transitioning and not narrative_active and not extraction_active
 
 
 func reveal_truth() -> bool:

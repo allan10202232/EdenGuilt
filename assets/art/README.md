@@ -44,6 +44,10 @@
 | `opening/eden_city.png` | 开场第二幕：结晶荒漠之上的伊甸环城 |
 | `opening/undercity.png` | 开场第三幕：地下死土矿区与聚落 |
 | `opening/discovery.png` | 开场第四幕：红色形态主角拾起吸魂器 |
+| `oases/junkyard_oasis.png` | 废铁中的草木、小树和清水，透明绿洲 |
+| `oases/mine_oasis.png` | 矿场苔藓泉水与蕨类，透明绿洲 |
+| `oases/eden_oasis.png` | 伊甸园花草和泉池，供两个独立能力点使用 |
+| `animations/hero_extract_actions.png` | 红色主角吸取土地生命力的六帧动作，3×2 格 |
 
 PNG 透明通道已在 Godot 实际加载验证。角色与敌人使用 AtlasTexture 的有效像素区域裁边，源 PNG 不改写。
 纹理使用最近邻过滤；前景碰撞来自关卡数据，背景中的装饰平台没有碰撞。
@@ -61,3 +65,6 @@ PNG 透明通道已在 Godot 实际加载验证。角色与敌人使用 AtlasTex
 
 开场插画使用独立的像素显现/消散材质，不修改原图片。英文旁白由界面绘制，
 不烘焙进插画；窗口缩放时保留图片比例和完整画面。参考图和提示词见 [开场美术记录](../../docs/opening-art-prompts.md)。
+
+新增透明绿洲与吸取动作素材的原图保持不变，枯萎、灰化、生命流和收束粒子由游戏实时绘制。
+吸取动作使用独立六帧表，保持原有 24 帧动作表不变；提示词和参考图见 [土地抽取美术记录](../../docs/land-extraction-art.md)。

@@ -6,13 +6,14 @@
 三关动作探索、实时碳账本与能效仪表盘、污染反馈、双形态、结局 A/B 与玩家个人可持续行为审计报告。
 
 第一关垃圾场直接使用 `Scenario1.png`，第二关毒雾矿坑直接使用 `Scenario2.jpg`；中段背景、地面与悬台以原图为参考生成。
-第三关伊甸城使用从 main 拉取的 `伊甸园1-2.jpeg`，同样接入匹配的中段、象牙白石台与藤蔓地面。
+第三关伊甸城使用从 main 拉取的 `Eden 1-2.jpeg`，同样接入匹配的中段、象牙白石台与藤蔓地面。
 素材与衔接方式见 [场景美术整合](docs/scenario-art-integration.md)。
 
 ## 本次更新
 
 - **开场动画**：增加吸魂器、伊甸环城、地下矿区和主角拾取吸魂器四幕英文旁白；插画逐像素显现并以像素方式转场，最后一幕缓慢淡入。按 Enter 推进并进入游戏。
 - **生命显示与受伤规则**：HUD 改为五颗绿色像素生命球；敌人、Boss、弹丸和危险机关每次有效命中扣半颗，并从右向左逐颗扣除。十次有效受伤耗尽生命，检查点回复一颗半，死亡后恢复五颗。
+- **土地抽取与绿洲**：三关的四个能力点都放置独立绿洲；按 E 后播放取出装置、下蹲引流、举起充能和收起装置的六帧动作。绿色生命流汇入球形吸魂器，草木与泉水逐步枯竭，约 2.4 秒后获得能力。返程共同修复并交还对应能力时，绿洲恢复。
 
 ## 打开和试玩
 
@@ -38,7 +39,10 @@
 | 光刃 | 本试玩版开局提供；正式获取地点仍待设计 |
 
 去程为 **垃圾场 Junkyard → 毒雾矿坑 Toxic Mine Pit → 伊甸城 Eden City**，三个独立场景、三关完整流程。
-在出生地捡到地脉提取器，靠近能力源按 E，地面分散的绿色会汇聚到角色，动画完成后学会新技能。
+垃圾场是废铁中的草木绿洲，矿坑是苔藓泉水，伊甸城的护盾和黑穿分别有自己的花草绿洲。
+站稳后靠近绿洲按一次 E，主角停步下蹲，用吸魂器引出土地生命流，再举起装置充能。
+动作完成才授予能力并记录枯竭状态；期间战斗和游戏计时暂停，重复按 E 不会重复抽取。
+未抽取的绿洲保留绿色；死亡继续和跨关回访会保留每个点的状态，中途返回菜单会取消未完成的抽取。
 技能实际生效才记碳排；空按、冷却拒绝和普通第一段跳不记。获得能力使生态白化，累计排放影响雾霾与怪物。
 
 | 关卡 | 探索与战斗 |
@@ -105,6 +109,8 @@ Q/E/R 和 F 黑穿的映射已由用户确认；光刃在试玩版开局提供�
 完整提示词见 [场景生成记录](docs/art-generation-prompts.md) 和 [动作生成记录](docs/character-action-prompts.md)。
 开场四幅插画、参考图与完整提示词见 [开场美术记录](docs/opening-art-prompts.md)；
 旁白和播放节奏集中在 `scripts/ui/opening_cinematic.gd`，入口为 `scenes/opening.tscn`。
+绿洲插画和六帧吸取动作素材使用内置 image_gen 生成，提示词见 [土地抽取美术记录](docs/land-extraction-art.md)。
+每个绿洲的状态表现位于 `scripts/presentation/campaign_oasis.gd`，动作流程与生命流位于 `scripts/presentation/land_extraction.gd`。
 
 ## 近战攻击模板
 
@@ -131,7 +137,7 @@ Q/E/R 和 F 黑穿的映射已由用户确认；光刃在试玩版开局提供�
 .\tests\run-tests.ps1 -Godot 'C:\Tools\Godot_v4.7.2-stable_win64_console.exe'
 ```
 
-增加 `-Screenshots` 会启用真实渲染并保存开场、生命球、主菜单、HUD、死亡、三关、Boss、返程、胜利及近战和角色动作截图：
+增加 `-Screenshots` 会启用真实渲染并保存开场、生命球、绿洲抽取、主菜单、HUD、死亡、三关、Boss、返程、胜利及近战和角色动作截图：
 
 ```powershell
 .\tests\run-tests.ps1 -Godot 'C:\Tools\Godot_v4.7.2-stable_win64_console.exe' -Screenshots
@@ -144,6 +150,7 @@ godot --headless --path . --editor --import --quit
 godot --headless --path . --audio-driver Dummy res://tests/startup_test.tscn
 godot --headless --path . --audio-driver Dummy res://tests/opening_test.tscn
 godot --headless --path . --audio-driver Dummy res://tests/health_test.tscn
+godot --headless --path . --audio-driver Dummy res://tests/extraction_test.tscn
 godot --headless --path . --audio-driver Dummy res://tests/phase_one_test.tscn
 godot --headless --path . --audio-driver Dummy res://tests/melee_test.tscn
 godot --headless --path . --audio-driver Dummy res://tests/carbon/carbon_test.tscn
@@ -155,10 +162,12 @@ godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/campai
 
 验收程序在检查失败、引擎错误或警告时返回非零退出码；仅允许引擎提示忽略 `prototype/` 嵌套工程的已知警告。
 生成的导入缓存、日志和截图位于已忽略的 `.godot/`、`test-output/`。
-本次整合后无窗口回归共 655 项通过，包含四幕开场、生命球、双语对话、绿色学习、毒素谜题、正常输入、真实伤害与敌人 AI 的 A/B 完整试玩；原有试玩记录见 [试玩与卡点检查](docs/walkthrough-review.md)。
+本次整合无窗口验收合计 728 项通过，包含四幕开场、生命球、四处绿洲抽取、双语对话、毒素谜题与正常输入 A/B 完整试玩；结果见 [土地抽取美术与联调记录](docs/land-extraction-art.md)。
 开场另经真实渲染检查，98 项通过；已查看像素显现、英文长句、地下矿区与最后一幕淡入的实际截图。
 开场验收覆盖八句旁白顺序、长按/转场输入、窗口缩放、四张图片加载，以及最后一次 Enter 仅启动一局游戏。
 生命球另经真实渲染检查，32 项通过，覆盖满血、半球、空球、最后半球，以及十次受伤后的死亡和检查点恢复。
+绿洲抽取另经真实渲染检查，91 项通过；已查看三种绿洲、下蹲与举起吸魂器、生命流、枯竭、共同修复和中英文切换的实际截图。
+抽取验收覆盖动作完成前不授予能力、冻结期间的碰撞与计时、重复输入、Eden 两个绿洲独立状态、检查点回访和中途退出的取消处理。
 HUD 持续显示当前目标；居民共建后的危险区解除，守卫在入口内被击败时也会正确触发真相剧情。
 入口另经全新目录、不带 `.godot/` 缓存的导入与启动检查。
 

@@ -95,6 +95,18 @@ try {
     Invoke-GodotCheck -EngineArguments $healthArguments -LogPath $healthLog -Summary 'HEALTH'
     Write-Host "Life orbs and damage passed. Log: $healthLog"
 
+    $extractionLog = Join-Path $outputDirectory $(if ($Screenshots) { 'extraction-visual.log' } else { 'extraction-headless.log' })
+    $extractionArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $extractionLog)
+    if ($Screenshots) {
+        $extractionArguments += @('--rendering-method', 'gl_compatibility')
+    } else {
+        $extractionArguments += '--headless'
+    }
+    $extractionArguments += 'res://tests/extraction_test.tscn'
+    if ($Screenshots) { $extractionArguments += @('--', '--screenshots') }
+    Invoke-GodotCheck -EngineArguments $extractionArguments -LogPath $extractionLog -Summary 'EXTRACTION'
+    Write-Host "Living oases and extraction passed. Log: $extractionLog"
+
     $testLog = Join-Path $outputDirectory $(if ($Screenshots) { 'phase-one-visual.log' } else { 'phase-one-headless.log' })
     $engineArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $testLog)
     if ($Screenshots) {

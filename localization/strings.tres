@@ -5,6 +5,17 @@
 [resource]
 script = ExtResource("1")
 messages = {
+  "%s · 生命绿洲\n%s": "%s · Living oasis\n%s",
+  "E  用吸魂器抽取": "E  Extract the land's life",
+  "共同修复 · 通路已恢复": "Restored together · Route open",
+  "黑穿 · 生命绿洲\n%s": "Shadow Pierce · Living oasis\n%s",
+  "E 抽取 / F 释放": "E Extract / F Pierce",
+  "共同修复 · 暗壁已拆除": "Restored together · Dark wall removed",
+  "这片绿洲已经被抽取。向右寻找真相，返程时与居民共同修复。": "This oasis has been drained. Seek the truth to the right, then return with the residents to restore it.",
+  "这片绿洲已共同修复，能力已经交还。": "This oasis has been restored together, and its ability returned.",
+  "落地后靠近绿洲，按 E 用吸魂器抽取土地生命力。": "Land beside an oasis, then press E to draw its life into the extractor.",
+  "正在抽取土地生命力……草木和泉水的生机正在汇入吸魂器。": "Drawing life from the land... Plants and spring water flow into the Soul Extractor.",
+  "获得%s。眼前的绿洲已经枯竭；这份力量来自土地的生命。": "Acquired %s. This oasis is depleted; its life now powers the extractor.",
   "遗庭 / %s": "Eden / %s",
   "E 吸收 / R 交还 · F1 光刃接口试用（地点待定）": "E learn / R return · F1 trial blade",
   "尖刺 -25": "Spikes -25",

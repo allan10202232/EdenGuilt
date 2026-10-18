@@ -130,11 +130,11 @@ func _action(action: StringName) -> void:
 	await _tick(2)
 	Input.action_release(action)
 	await _tick(2)
-	if action==&"eden_absorb":
-		for wait in 150:
-			if WorldProgress.narrative_kind!=&"learning": break
+	if action == &"eden_absorb":
+		for frame in 240:
+			if not WorldProgress.extraction_active:
+				break
 			await _tick(1)
-
 
 func _walk(target: float) -> void:
 	if failures: return

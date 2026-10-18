@@ -19,7 +19,7 @@ var _death_reason: StringName = &"damage"
 
 
 func _process(delta: float) -> void:
-	if state == State.PLAYING and not WorldProgress.narrative_active:
+	if state == State.PLAYING and not WorldProgress.narrative_active and not WorldProgress.extraction_active:
 		elapsed_seconds += delta
 
 
@@ -50,7 +50,7 @@ func return_to_menu() -> void:
 
 
 func sync_health(current: int, maximum: int) -> void:
-	if state != State.PLAYING or WorldProgress.transitioning or WorldProgress.narrative_active:
+	if state != State.PLAYING or WorldProgress.transitioning or WorldProgress.narrative_active or WorldProgress.extraction_active:
 		return
 	max_health = maxi(1, maximum)
 	health = clampi(current, 0, max_health)
@@ -60,7 +60,7 @@ func sync_health(current: int, maximum: int) -> void:
 
 
 func sync_score(value: int) -> void:
-	if state != State.PLAYING or WorldProgress.transitioning or WorldProgress.narrative_active:
+	if state != State.PLAYING or WorldProgress.transitioning or WorldProgress.narrative_active or WorldProgress.extraction_active:
 		return
 	score = maxi(0, value)
 	score_changed.emit(score)
@@ -94,7 +94,7 @@ func complete_level() -> void:
 
 func finish_run(won: bool) -> void:
 	# Only the first terminal event wins; late collisions cannot replace the result.
-	if state != State.PLAYING or WorldProgress.transitioning or WorldProgress.narrative_active:
+	if state != State.PLAYING or WorldProgress.transitioning or WorldProgress.narrative_active or WorldProgress.extraction_active:
 		return
 	WorldProgress.set_shield_active(false)
 	last_result = {

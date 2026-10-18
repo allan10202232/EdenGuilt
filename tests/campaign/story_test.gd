@@ -59,17 +59,17 @@ func _run() -> void:
 	_check(WorldProgress.can_play() and _player().is_on_floor() and _player().velocity.y>=0,"final Space confirmation closes dialogue without an accidental jump")
 	await _place(Vector2(420,596))
 	await _action(&"eden_absorb",false)
-	_check(WorldProgress.narrative_kind==&"learning" and not WorldProgress.has_ability(&"double_jump"),"skill is not granted before greenery gathers")
-	_check(_level().ritual.starts.size()>3 and _player()._art.sprite.frame==20,"learning gathers scattered ground life into a channeling hero")
+	_check(WorldProgress.extraction_active and not WorldProgress.has_ability(&"double_jump"),"skill is not granted before extraction completes")
+	_check(_level().extraction.active and _player()._art.action==&"extract" and _player()._art.extraction_sprite.visible,"learning uses the new Soul Extractor poses")
 	before=GameSession.elapsed_seconds
 	await _ticks(35)
 	await _capture("story-04-green-gathering")
 	_check(GameSession.elapsed_seconds==before and CarbonLedger.gross_kg==0,"gathering pauses gameplay and has no carbon charge")
-	await _ticks(70)
-	_check(WorldProgress.has_ability(&"double_jump") and WorldProgress.can_play(),"gathering unlocks Double Jump and resumes gameplay")
+	await _ticks(120)
+	_check(WorldProgress.has_ability(&"double_jump") and WorldProgress.can_play(),"extraction unlocks Double Jump and resumes gameplay")
 	await _capture("story-05-new-ability")
 	await _action(&"eden_absorb")
-	_check(WorldProgress.narrative_kind==&"" and CarbonLedger.gross_kg==0,"revisiting a learned source cannot replay or bill learning")
+	_check(not WorldProgress.extraction_active and WorldProgress.narrative_kind==&"" and CarbonLedger.gross_kg==0,"revisiting a learned source cannot replay or bill learning")
 	WorldProgress.enter_scene(&"grassland",Vector2(140,596))
 	await _ticks(10)
 	_check(_level().definition.title=="Toxic Mine Pit" and _level().npc.conversation().lines[2].contains("I Crystal"),"cavern NPC provides the seal sequence")
@@ -164,8 +164,8 @@ func _action(action: StringName, wait_learning: bool=true) -> void:
 	Input.action_release(action)
 	await _ticks(2)
 	if wait_learning:
-		for index in 150:
-			if WorldProgress.narrative_kind!=&"learning": break
+		for index in 240:
+			if not WorldProgress.extraction_active: break
 			await _ticks(1)
 func _key(code: Key) -> void:
 	for pressed in [true,false]:

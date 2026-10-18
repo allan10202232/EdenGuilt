@@ -284,8 +284,8 @@ func _action(action: StringName) -> void:
 	Input.action_release(action)
 	await _physics_frames(1)
 	if action==&"eden_absorb":
-		for wait in 150:
-			if WorldProgress.narrative_kind!=&"learning": break
+		for wait in 240:
+			if not WorldProgress.extraction_active: break
 			await _physics_frames(1)
 
 

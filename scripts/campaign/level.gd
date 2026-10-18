@@ -24,14 +24,14 @@ var _bursts: Array[Dictionary] = []
 var _source_label: Label
 var _gate: StaticBody2D
 var _route_ready: bool = false
-var _source_sprite: Sprite2D
+var oases: Dictionary[StringName, CampaignOasis] = {}
+var extraction: LandExtraction
 var _secondary_label: Label
 var _dark_bodies: Array[StaticBody2D] = []
 var _mineral_platforms: Array[Rect2] = []
 var _temporary_platforms: Array[Dictionary] = []
 var _exit_area: Area2D
 var growth_points: Array[Vector2] = []
-var ritual: LearningRitual
 var npc: CampaignNPC
 var toxin: float = 0.0
 var _toxin_tick: float = 0.0
@@ -55,6 +55,7 @@ func _ready() -> void:
 	_middle_background=definition.get("middle_background") as Texture2D
 	_companion_texture = CampaignLevels.trimmed_texture("characters/hero_green")
 	player.position = WorldProgress.spawn_position
+	player.z_index = 5
 	player.death_height = float(definition.height)+80.0
 	var camera: Camera2D = player.get_node("Camera2D")
 	camera.limit_right = int(definition.width)
@@ -108,21 +109,15 @@ func _ready() -> void:
 	_exit_area=_area(Rect2(exit_point-Vector2(25,45),Vector2(50,100)),"Exit")
 	_exit_area.body_entered.connect(_on_exit)
 	_area(Rect2(22,480,30,140),"Entrance").body_entered.connect(_on_entrance)
-	_source_label = _label(definition.source+Vector2(45,-100),"",16)
-	_source_sprite = Sprite2D.new()
-	_source_sprite.texture = _companion_texture
-	if _companion_texture != null:
-		_source_sprite.scale = Vector2.ONE*64.0/_companion_texture.get_height()
-	_source_sprite.position = definition.source+Vector2(0,-45)
-	add_child(_source_sprite)
+	_source_label = _label(definition.source+Vector2(45,-135),"",16)
+	_source_label.z_index = 6
+	_add_oasis(definition.source, definition.ability)
 	if definition.has("secondary_source"):
-		_secondary_label=_label(definition.secondary_source+Vector2(35,-100),"",16,Color(0.77,0.56,0.94))
-		var orb:=Sprite2D.new()
-		orb.texture=CampaignLevels.trimmed_texture("characters/hero_red")
-		orb.scale=Vector2.ONE*64.0/orb.texture.get_height()
-		orb.position=definition.secondary_source-Vector2(0,45)
-		orb.modulate=Color(0.78,0.65,1)
-		add_child(orb)
+		_secondary_label=_label(definition.secondary_source+Vector2(35,-135),"",16,Color(0.77,0.56,0.94))
+		_secondary_label.z_index = 6
+		_add_oasis(definition.secondary_source, definition.secondary_ability)
+	extraction = LandExtraction.new()
+	add_child(extraction)
 	_add_region_signs()
 	for point: Vector2 in definition.recycling:
 		_label(point+Vector2(-30,-65),GameText.t("V 循环拆解"),13,Color(0.55,0.89,0.75))
@@ -153,7 +148,7 @@ func _process(delta: float) -> void:
 	# Camera movement and resizing must redraw the panorama even during dialogue.
 	queue_redraw()
 	for signpost in _signs:
-		signpost.label.visible=not WorldProgress.narrative_active and not is_instance_valid(ritual) and _clock<10.0
+		signpost.label.visible=not WorldProgress.narrative_active and not WorldProgress.extraction_active and _clock<10.0
 	if not WorldProgress.can_play():
 		return
 	_clock+=delta
@@ -161,7 +156,6 @@ func _process(delta: float) -> void:
 	for area in _pickups:
 		if is_instance_valid(area):
 			area.get_child(1).position.y=sin(_clock*3.5+area.position.x)*4.0
-	_source_sprite.position.y = definition.source.y-45.0+sin(_clock*2.0)*3.0
 	if WorldProgress.returning:
 		if _companions.is_empty():
 			_companions.assign([player.position,player.position,player.position])
@@ -307,14 +301,16 @@ func _refresh_world() -> void:
 	var ability: StringName=definition.ability
 	var status:=WorldProgress.ability_state(ability)
 	var learned_hint: String=GameText.t("R 与居民修复并卸下") if WorldProgress.core_reversed else GameText.t("已学会 · 向右寻找真相")
-	_source_label.text=GameText.t("%s之灵\n%s")%[AbilityCatalog.definition(ability).name,[GameText.t("E  吸收能力"),learned_hint,GameText.t("通路已恢复")][status]]
+	_source_label.text=GameText.t("%s · 生命绿洲\n%s")%[AbilityCatalog.definition(ability).name,[GameText.t("E  用吸魂器抽取"),learned_hint,GameText.t("共同修复 · 通路已恢复")][status]]
 	_source_label.modulate=definition.accent
-	_source_sprite.modulate=Color(0.65,0.68,0.62) if status==WorldProgress.AbilityState.BORROWED else Color.WHITE
+	for oasis: CampaignOasis in oases.values():
+		if not extraction.active or extraction._oasis != oasis:
+			oasis.refresh_state()
 	(material as ShaderMaterial).set_shader_parameter("bleaching",0.55 if WorldProgress.land_state(region_id)==&"wasted" else 0.0)
 	if _secondary_label!=null:
 		var second_status:=WorldProgress.ability_state(definition.secondary_ability)
 		var second_hint: String=GameText.t("R 卸下黑穿") if WorldProgress.core_reversed else GameText.t("F 可用 · 向右探索")
-		_secondary_label.text=GameText.t("黑穿 · +200 kg\n%s")%[GameText.t("E 学习 / F 释放"),second_hint,GameText.t("暗壁已拆除")][second_status]
+		_secondary_label.text=GameText.t("黑穿 · 生命绿洲\n%s")%[GameText.t("E 抽取 / F 释放"),second_hint,GameText.t("共同修复 · 暗壁已拆除")][second_status]
 	var unlocked:=WorldProgress.has_ability(ability) or WorldProgress.route_open(ability)
 	_gate.get_child(0).set_deferred(&"disabled",unlocked)
 	if (WorldProgress.route_open(ability) or WorldProgress.repaired_regions.has(region_id)) and not _route_ready:
@@ -343,16 +339,31 @@ func _interact_source(point: Vector2,ability: StringName) -> void:
 	if player.position.distance_to(point)>=108.0:
 		return
 	if Input.is_action_just_pressed(&"eden_absorb"):
-		if WorldProgress.ability_state(ability)==WorldProgress.AbilityState.UNAVAILABLE:
-			ritual=LearningRitual.new()
-			add_child(ritual)
-			ritual.begin(player,ability,growth_points)
+		if WorldProgress.ability_state(ability) == WorldProgress.AbilityState.UNAVAILABLE:
+			extraction.begin(player, oases[ability])
+		else:
+			WorldProgress.set_notice(GameText.t("这片绿洲已经被抽取。向右寻找真相，返程时与居民共同修复。") if WorldProgress.has_ability(ability) else GameText.t("这片绿洲已共同修复，能力已经交还。"))
 	elif Input.is_action_just_pressed(&"eden_return"):
 		if WorldProgress.core_reversed:
 			WorldProgress.repair_current_region()
 			WorldProgress.return_ability(ability)
 		else:
 			WorldProgress.set_notice(GameText.t("先到伊甸城发现真相，再决定提取器的未来。"))
+
+
+func _add_oasis(point: Vector2, ability: StringName) -> void:
+	var biome := "junkyard" if region_id == &"lone_tree" else "mine" if region_id == &"grassland" else "eden"
+	var ground := point + Vector2(0, 30)
+	# Keep the whole living patch rooted on solid terrain near a platform edge.
+	for rect: Rect2 in _platforms:
+		if absf(rect.position.y - ground.y) < 4.0 and point.x >= rect.position.x and point.x <= rect.end.x and rect.size.x >= CampaignOasis.WIDTH:
+			ground.x = clampf(point.x, rect.position.x + CampaignOasis.WIDTH * 0.5, rect.end.x - CampaignOasis.WIDTH * 0.5)
+			break
+	var oasis := CampaignOasis.new()
+	oasis.name = "Oasis_" + String(ability)
+	add_child(oasis)
+	oasis.setup(ability, biome, ground)
+	oases[ability] = oasis
 
 
 func try_mineralize(origin: Vector2,facing: float) -> bool:
@@ -518,7 +529,6 @@ func _draw() -> void:
 			continue
 		for x in range(int(rect.position.x),int(rect.end.x)-8,14):
 			draw_colored_polygon(PackedVector2Array([Vector2(x,rect.end.y),Vector2(x+7,rect.position.y),Vector2(x+14,rect.end.y)]),Color(0.77,0.36,0.34))
-	var source: Vector2=definition.source
 	for index in growth_points.size():
 		var point:=growth_points[index]
 		var strength:=1.0
@@ -526,8 +536,8 @@ func _draw() -> void:
 			strength=0.2
 		if definition.has("secondary_source") and WorldProgress.has_ability(definition.secondary_ability) and point.distance_to(definition.secondary_source)<680:
 			strength=0.2
-		if is_instance_valid(ritual) and not ritual.granted and point.distance_to(player.position)<680:
-			strength=maxf(0.15,1.0-ritual.elapsed/1.5)
+		if extraction.active and point.distance_to(extraction._oasis.position)<680:
+			strength=maxf(0.15,1.0-extraction.progress)
 		var wind:=sin(_clock*1.4+index)*3.0
 		var tint:=Color(0.35,0.58,0.25,strength)
 		draw_line(point,point+Vector2(wind,-12),tint,2,true)
@@ -537,11 +547,6 @@ func _draw() -> void:
 		draw_rect(Rect2(3900,350,20,150),Color(0.28,0.36,0.15,0.9))
 		for index in 3:
 			draw_circle(Vector2(3910,380+index*40),6,Color(0.66,0.9,0.45) if WorldProgress.is_collected(_entity_id("mineral_%d"%index)) else Color(0.17,0.19,0.11))
-	if _scenery_terrain!=null:
-		_paint_scenery_platform(Rect2(source-Vector2(28,-3),Vector2(56,20)))
-	else:
-		draw_rect(Rect2(source-Vector2(28,-3),Vector2(56,20)),Color(0.2,0.27,0.26))
-	draw_arc(source-Vector2(0,40),45.0,_clock*0.5,_clock*0.5+TAU*0.8,32,Color(definition.accent,0.45),2)
 	for point: Vector2 in _checkpoints:
 		draw_line(point+Vector2(0,24),point-Vector2(0,35),Color(0.3,0.28,0.23),7)
 		draw_circle(point-Vector2(0,42),10,Color(0.95,0.66,0.29,0.15))
@@ -607,7 +612,7 @@ func _refresh_language() -> void:
 			0: signpost.label.text=GameText.t(definition.subtitle)
 			1: signpost.label.text="%02d / 03    %s"%[AbilityCatalog.REGIONS.find(region_id)+1,definition.title]
 			2: signpost.label.text=definition.secret
-	if is_instance_valid(_source_sprite): _refresh_world()
+	if is_instance_valid(extraction): _refresh_world()
 
 
 func _paint_platform(rect: Rect2,restored: bool=false) -> void:

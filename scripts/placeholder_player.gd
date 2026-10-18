@@ -23,6 +23,8 @@ var _pierce_recovery: float = 0.0
 var _pierce_flash: float = 0.0
 var _shield_time: float = 0.0
 var _shield_recovery: float = 0.0
+var extracting := false
+var extraction_progress := 0.0
 
 
 func _ready() -> void:
@@ -60,6 +62,27 @@ func _can_melee_attack() -> bool:
 func face_direction(direction: float) -> void:
 	if is_finite(direction) and direction != 0.0:
 		_facing = signf(direction)
+
+
+func begin_extraction(ground: Vector2) -> void:
+	extracting = true
+	extraction_progress = 0.0
+	velocity = Vector2.ZERO
+	combat.cancel()
+	_dash_remaining = 0.0
+	_pierce_flash = 0.0
+	_shield_time = 0.0
+	_jump_buffer = 0.0
+	_invulnerability = 0.0
+	modulate.a = 1.0
+	WorldProgress.set_shield_active(false)
+	if absf(ground.x - global_position.x) > 12.0:
+		face_direction(ground.x - global_position.x)
+
+
+func finish_extraction() -> void:
+	extracting = false
+	extraction_progress = 0.0
 
 
 func _physics_process(delta: float) -> void:
