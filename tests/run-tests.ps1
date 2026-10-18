@@ -63,6 +63,12 @@ try {
         '--log-file', $navigationLog, 'res://tests/navigation_system_test.tscn'
     ) -LogPath $navigationLog -Summary 'NAVIGATION'
     Write-Host 'Room round trips, doors, physical elevator carry and skills passed.'
+    $demoLog = Join-Path $outputDirectory 'demo.log'
+    Invoke-GodotCheck -EngineArguments @(
+        '--headless', '--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60',
+        '--log-file', $demoLog, 'res://tests/demo_shortcuts_test.tscn'
+    ) -LogPath $demoLog -Summary 'DEMO'
+    Write-Host 'Opt-in presentation shortcuts and safe chapter entry passed.'
     Invoke-GodotCheck -EngineArguments @(
         '--headless', '--path', $projectDirectory, '--audio-driver', 'Dummy',
         '--log-file', $startupLog, 'res://tests/startup_test.tscn'

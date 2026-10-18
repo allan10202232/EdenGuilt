@@ -1,6 +1,7 @@
 extends Node
 
 @export var campaign_mode: bool = true
+@export var demo_shortcuts_enabled:=false
 const CAMPAIGN_SCENES: Dictionary = {
 	&"lone_tree": preload("res://scenes/campaign/junkyard_start.tscn"),
 	&"grassland": preload("res://scenes/campaign/toxic_mine.tscn"),
@@ -23,6 +24,7 @@ var _audit: Control
 var _dialogue: Control
 var transitions: RoomTransitionController
 var _loaded_region: StringName=&"lone_tree"
+var demo_shortcuts: Node
 
 
 func _ready() -> void:
@@ -62,6 +64,10 @@ func _ready() -> void:
 	GameSession.state_changed.connect(_on_state_changed)
 	WorldProgress.scene_requested.connect(_on_scene_requested)
 	_on_state_changed(GameSession.state, GameSession.state)
+	if campaign_mode and (demo_shortcuts_enabled or "--demo" in OS.get_cmdline_user_args()):
+		demo_shortcuts=preload("res://scripts/demo/chapter_shortcuts.gd").new()
+		demo_shortcuts.host=self
+		add_child(demo_shortcuts)
 
 
 func _on_state_changed(_previous: int, current: int) -> void:

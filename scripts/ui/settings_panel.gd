@@ -59,11 +59,14 @@ func _refresh() -> void:
 	_controls.text = GameText.t(GUIDE)
 	if WorldProgress.eden_chapter.get("active",false) and WorldProgress.current_scene==&"remnant_sea":
 		_controls.text=EdenBlueprint.text("A/D: move · Space: jump / double jump\nE / C / J: mineralize · E at a source: extract\nQ / K: hold shield; tap just before impact to parry\nShift / L / F: Dark Dash through violet phase walls\nLMB: quick slash · RMB: heavy slash\nT: inspect / elevator / exit · Down + Space: drop\nR at 1F: return skills\nShield drains 28/s; regenerate after releasing for 0.8s.","A/D 移动 · 空格跳跃 / 二段跳\nE / C / J 矿化；能力源旁 E 吸取\nQ / K 按住护盾，命中前短按弹反\nShift / L / F 黑冲穿紫色相位墙\n左键轻击 · 右键重击\nT 查看 / 电梯 / 出口 · 下 + 空格下降\n一层 R 交还能力\n护盾每秒消耗 28，松开 0.8 秒后恢复。")
+	if get_tree().get_first_node_in_group(&"demo_shortcuts")!=null:
+		_controls.text+=EdenBlueprint.text("\n\nDEMO: Ctrl + PageDown / PageUp: next / previous chapter\nCtrl + 1 / 2 / 3: jump to a chapter entrance.","\n\n演示：Ctrl + PageDown / PageUp：下一章 / 上一章\nCtrl + 1 / 2 / 3：直达对应章节入口。")
 	_sound.text = GameText.t("声音：关闭") if SoundManager.muted else GameText.t("声音：开启")
 	_close.text = GameText.t("关闭")
 	_menu.text = GameText.t("返回主菜单")
 
 func open() -> void:
+	_refresh()
 	if GameSession.state == GameSession.State.PLAYING:
 		if not WorldProgress.can_play(): return
 		WorldProgress.narrative_active = true
