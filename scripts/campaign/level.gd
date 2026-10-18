@@ -28,6 +28,13 @@ var _dark_bodies: Array[StaticBody2D] = []
 var _mineral_platforms: Array[Rect2] = []
 var _temporary_platforms: Array[Dictionary] = []
 var _exit_area: Area2D
+var growth_points: Array[Vector2] = []
+var ritual: LearningRitual
+var npc: CampaignNPC
+var toxin: float = 0.0
+var _toxin_tick: float = 0.0
+var _filter_gate: StaticBody2D
+var _signs: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -52,9 +59,13 @@ func _ready() -> void:
 	_platforms = definition.platforms
 	for rect: Rect2 in _platforms:
 		_add_platform(rect)
+		for x in range(int(rect.position.x)+38,int(rect.end.x)-16,103):
+			growth_points.append(Vector2(x,rect.position.y))
 	_add_platform(Rect2(-32,0,32,definition.height))
 	_add_platform(Rect2(definition.width,0,32,definition.height))
 	_gate = _add_platform(definition.gate)
+	if region_id==&"grassland":
+		_filter_gate=_add_platform(Rect2(3900,350,20,150))
 	for rect: Rect2 in definition.spikes:
 		_spike_areas.append(_area(rect,"Spikes"))
 	for index in definition.beams.size():
@@ -102,31 +113,39 @@ func _ready() -> void:
 		orb.position=definition.secondary_source-Vector2(0,45)
 		orb.modulate=Color(0.78,0.65,1)
 		add_child(orb)
-	_label(Vector2(110,405),definition.subtitle,28,Color(0.86,0.83,0.68))
-	_label(Vector2(112,442),"%02d / 03    %s"%[AbilityCatalog.REGIONS.find(region_id)+1,definition.title],18,definition.accent)
-	_label(Vector2(112,472),definition.secret,13,Color(0.7,0.76,0.74))
+	_add_region_signs()
 	for point: Vector2 in definition.recycling:
-		_label(point+Vector2(-30,-65),"V 循环拆解",13,Color(0.55,0.89,0.75))
-	for node: Dictionary in definition.mineral_nodes:
-		_label(node.point+Vector2(-55,-80),"C 固化毒雾",14,Color(0.55,0.91,0.98))
+		_label(point+Vector2(-30,-65),GameText.t("V 循环拆解"),13,Color(0.55,0.89,0.75))
+	for index in definition.mineral_nodes.size():
+		var node: Dictionary=definition.mineral_nodes[index]
+		_label(node.point+Vector2(-55,-80),GameText.t("%s · C 固化毒雾")%[["I","II","III"][index]],14,Color(0.7,0.9,0.48))
 	if region_id==&"lone_tree":
-		_label(Vector2(80,535),"A/D 移动 · 空格跳跃\n灯火：检查点",13)
-	var exit_label:=_label(exit_point+Vector2(-110,-115),"真相档案 →" if region_id==&"remnant_sea" else "下一关 →",17)
+		_label(Vector2(80,535),GameText.t("A/D 移动 · 空格跳跃\n灯火：检查点"),13)
+	var exit_label:=_label(exit_point+Vector2(-110,-115),GameText.t("真相档案 →") if region_id==&"remnant_sea" else GameText.t("下一关 →"),17)
 	if region_id==&"remnant_sea":
 		exit_label.name="RescueLabel"
 	WorldProgress.world_changed.connect(_refresh_world)
+	GameText.language_changed.connect(_refresh_language)
+	npc=CampaignNPC.new()
+	npc.player=player
+	npc.region=region_id
+	npc.position=Vector2(260 if region_id!=&"grassland" else 360,596)
+	add_child(npc)
 	_refresh_world()
 	# A playable campaign needs a starting weapon; formal acquisition remains configurable.
 	if WorldProgress.ability_state(&"light_blade")==WorldProgress.AbilityState.UNAVAILABLE:
 		WorldProgress.borrow_ability(&"light_blade")
-		WorldProgress.set_notice("地脉提取器已拾取。左键短砍 / 右键长砍；能力源按 E。每次技能都会写入碳账本。")
+		WorldProgress.set_notice(GameText.t("地脉提取器已拾取。左键短砍 / 右键长砍；能力源按 E。每次技能都会写入碳账本。"))
 	queue_redraw()
 
 
 func _process(delta: float) -> void:
+	for signpost in _signs:
+		signpost.label.visible=not WorldProgress.narrative_active and not is_instance_valid(ritual) and _clock<10.0
 	if not WorldProgress.can_play():
 		return
 	_clock+=delta
+	_update_toxin(delta)
 	for area in _pickups:
 		if is_instance_valid(area):
 			area.get_child(1).position.y=sin(_clock*3.5+area.position.x)*4.0
@@ -159,7 +178,7 @@ func _physics_process(_delta: float) -> void:
 				player.hurt(20)
 	if WorldProgress.core_reversed and region_id==&"remnant_sea" and player.position.distance_to(definition.exit)<140.0 and Input.is_action_just_pressed(&"eden_return"):
 		if WorldProgress.repair_current_region():
-			WorldProgress.set_notice("3 位居民已共同打通伊甸园公共路线。向左回两个能力源卸下护盾和黑穿。")
+			WorldProgress.set_notice(GameText.t("3 位居民已共同打通伊甸城公共路线。向左回两个能力源卸下护盾和黑穿。"))
 	_interact_source(definition.source,definition.ability)
 	if definition.has("secondary_source"):
 		_interact_source(definition.secondary_source,definition.secondary_ability)
@@ -171,7 +190,7 @@ func _physics_process(_delta: float) -> void:
 					WorldProgress.collect_once(id)
 					player.stats.add_score(75)
 					SoundManager.play_sfx(&"pickup")
-					WorldProgress.set_notice("循环拆解完成：材料回收 +%.0f kg；矿石替代量为教学估算，见审计报告。"%CarbonLedger.rules.recycled_material_per_node_kg)
+					WorldProgress.set_notice(GameText.t("循环拆解完成：材料回收 +%.0f kg；矿石替代量为教学估算，见审计报告。")%CarbonLedger.rules.recycled_material_per_node_kg)
 				break
 	if Input.is_action_just_pressed(&"eden_trial_blade") and OS.is_debug_build():
 		WorldProgress.borrow_ability(&"light_blade")
@@ -185,17 +204,20 @@ func _on_checkpoint(body: Node2D,point: Vector2,index: int) -> void:
 func _on_exit(body: Node2D) -> void:
 	if body!=player or not WorldProgress.can_play():
 		return
+	if region_id==&"grassland" and not mine_puzzle_solved():
+		WorldProgress.set_notice(GameText.t("净化门仍关闭：按 I → II → III 的顺序固化三个毒雾节点。"))
+		return
 	var ability: StringName = definition.ability
 	if WorldProgress.ability_state(ability)==WorldProgress.AbilityState.UNAVAILABLE:
-		WorldProgress.set_notice("本关的%s尚未获得，返回发光的能力源按 E。"%AbilityCatalog.DEFINITIONS[ability].name)
+		WorldProgress.set_notice(GameText.t("本关的%s尚未获得，返回发光的能力源按 E。")%AbilityCatalog.definition(ability).name)
 		return
 	var index:=AbilityCatalog.REGIONS.find(region_id)
 	if index<2:
 		WorldProgress.enter_scene(AbilityCatalog.REGIONS[index+1],Vector2(140,596))
 	elif not WorldProgress.is_enemy_defeated(_entity_id("boss")):
-		WorldProgress.set_notice("伊甸守卫仍在保护能源档案，先击败它再揭开真相。")
+		WorldProgress.set_notice(GameText.t("伊甸守卫仍在保护能源档案，先击败它再揭开真相。"))
 	elif WorldProgress.ability_state(&"black_pierce")==WorldProgress.AbilityState.UNAVAILABLE:
-		WorldProgress.set_notice("先在紫色能力源学会黑穿（F），再进入能源档案。")
+		WorldProgress.set_notice(GameText.t("先在紫色能力源学会黑穿（F），再进入能源档案。"))
 	else:
 		WorldProgress.reveal_truth()
 
@@ -211,7 +233,7 @@ func _on_entrance(body: Node2D) -> void:
 	elif WorldProgress.returning and WorldProgress.required_returns_complete():
 		GameSession.complete_level()
 	else:
-		WorldProgress.set_notice("向右探索垃圾场、毒雾矿场、伊甸园。选择逆向循环后从这里回家。")
+		WorldProgress.set_notice(GameText.t("向右探索垃圾场、毒雾矿洞、伊甸城。选择逆向循环后从这里回家。"))
 
 
 func _spawn_enemy(point: Vector2,patrol: Vector2,id: String,boss: bool=false) -> void:
@@ -233,7 +255,7 @@ func _spawn_enemy(point: Vector2,patrol: Vector2,id: String,boss: bool=false) ->
 func _on_enemy_defeated(enemy: CampaignEnemy) -> void:
 	_bursts.append({"position":enemy.position,"life":0.7,"boss":enemy.boss})
 	if enemy.boss:
-		WorldProgress.set_notice("伊甸守卫已倒下。右侧能源档案已解锁：伊甸园的绿色由谁承担代价？")
+		WorldProgress.set_notice(GameText.t("伊甸守卫已倒下。右侧能源档案已解锁：伊甸城的绿色由谁承担代价？"))
 		# A player can land the last hit while already standing in the portal.
 		# Recheck after the hit callback; another body_entered event may never occur.
 		_retry_archive.call_deferred()
@@ -273,15 +295,15 @@ func _spawn_shard(point: Vector2,index: int) -> void:
 func _refresh_world() -> void:
 	var ability: StringName=definition.ability
 	var status:=WorldProgress.ability_state(ability)
-	var learned_hint: String="R 与居民修复并卸下" if WorldProgress.core_reversed else "已学会 · 向右寻找真相"
-	_source_label.text="%s之灵\n%s"%[AbilityCatalog.DEFINITIONS[ability].name,["E  吸收能力",learned_hint,"通路已恢复"][status]]
+	var learned_hint: String=GameText.t("R 与居民修复并卸下") if WorldProgress.core_reversed else GameText.t("已学会 · 向右寻找真相")
+	_source_label.text=GameText.t("%s之灵\n%s")%[AbilityCatalog.definition(ability).name,[GameText.t("E  吸收能力"),learned_hint,GameText.t("通路已恢复")][status]]
 	_source_label.modulate=definition.accent
 	_source_sprite.modulate=Color(0.65,0.68,0.62) if status==WorldProgress.AbilityState.BORROWED else Color.WHITE
 	(material as ShaderMaterial).set_shader_parameter("bleaching",0.55 if WorldProgress.land_state(region_id)==&"wasted" else 0.0)
 	if _secondary_label!=null:
 		var second_status:=WorldProgress.ability_state(definition.secondary_ability)
-		var second_hint: String="R 卸下黑穿" if WorldProgress.core_reversed else "F 可用 · 向右探索"
-		_secondary_label.text="黑穿 · +200 kg\n%s"%["E 学习 / F 释放",second_hint,"暗壁已拆除"][second_status]
+		var second_hint: String=GameText.t("R 卸下黑穿") if WorldProgress.core_reversed else GameText.t("F 可用 · 向右探索")
+		_secondary_label.text=GameText.t("黑穿 · +200 kg\n%s")%[GameText.t("E 学习 / F 释放"),second_hint,GameText.t("暗壁已拆除")][second_status]
 	var unlocked:=WorldProgress.has_ability(ability) or WorldProgress.route_open(ability)
 	_gate.get_child(0).set_deferred(&"disabled",unlocked)
 	if (WorldProgress.route_open(ability) or WorldProgress.repaired_regions.has(region_id)) and not _route_ready:
@@ -292,6 +314,8 @@ func _refresh_world() -> void:
 	if WorldProgress.repaired_regions.has(region_id):
 		for hazard in hazards:
 			hazard.neutralized=true
+	if is_instance_valid(_filter_gate):
+		_filter_gate.get_child(0).set_deferred(&"disabled",mine_puzzle_solved())
 	if WorldProgress.returning:
 		_label_mission_return()
 	queue_redraw()
@@ -301,20 +325,23 @@ func _label_mission_return() -> void:
 	# Entrance and exit labels are world-space signposts, never collidable art.
 	var rescue := get_node_or_null("RescueLabel") as Label
 	if rescue != null:
-		rescue.text="R 居民共建 · 向左返程" if WorldProgress.returning else "真相档案 →"
+		rescue.text=GameText.t("R 居民共建 · 向左返程") if WorldProgress.returning else GameText.t("真相档案 →")
 
 
 func _interact_source(point: Vector2,ability: StringName) -> void:
 	if player.position.distance_to(point)>=108.0:
 		return
 	if Input.is_action_just_pressed(&"eden_absorb"):
-		WorldProgress.borrow_ability(ability)
+		if WorldProgress.ability_state(ability)==WorldProgress.AbilityState.UNAVAILABLE:
+			ritual=LearningRitual.new()
+			add_child(ritual)
+			ritual.begin(player,ability,growth_points)
 	elif Input.is_action_just_pressed(&"eden_return"):
 		if WorldProgress.core_reversed:
 			WorldProgress.repair_current_region()
 			WorldProgress.return_ability(ability)
 		else:
-			WorldProgress.set_notice("先到伊甸园发现真相，再决定提取器的未来。")
+			WorldProgress.set_notice(GameText.t("先到伊甸城发现真相，再决定提取器的未来。"))
 
 
 func try_mineralize(origin: Vector2,facing: float) -> bool:
@@ -324,11 +351,14 @@ func try_mineralize(origin: Vector2,facing: float) -> bool:
 		var node: Dictionary=definition.mineral_nodes[index]
 		var id:=_entity_id("mineral_%d"%index)
 		if origin.distance_to(node.point)<145.0 and not WorldProgress.is_collected(id):
+			if index>0 and not WorldProgress.is_collected(_entity_id("mineral_%d"%(index-1))):
+				WorldProgress.set_notice(GameText.t("毒雾仍在回流。先固化前一个编号节点，再处理这里。"))
+				return false
 			WorldProgress.collect_once(id)
 			_install_mineral(index)
 			WorldProgress.report_ability_used(&"mineralization")
 			CarbonLedger.store_carbon(id,CarbonLedger.rules.mineral_node_storage_kg)
-			WorldProgress.set_notice("碳矿化 +1 kg；本节点固定 %.0f kg CO₂（游戏模型），晶桥已生成。"%CarbonLedger.rules.mineral_node_storage_kg)
+			WorldProgress.set_notice(GameText.t("碳矿化 +1 kg；本节点固定 %.0f kg CO₂（游戏模型），晶桥已生成。")%CarbonLedger.rules.mineral_node_storage_kg)
 			return true
 	var rect:=Rect2(origin+Vector2(facing*105.0-64.0,70),Vector2(128,18))
 	var query:=PhysicsShapeQueryParameters2D.new()
@@ -338,7 +368,7 @@ func try_mineralize(origin: Vector2,facing: float) -> bool:
 	query.transform=Transform2D(0.0,rect.get_center())
 	query.collision_mask=17
 	if not get_world_2d().direct_space_state.intersect_shape(query).is_empty():
-		WorldProgress.set_notice("在空中前方生成临时晶台，或靠近毒雾节点再按 C；无效释放不记排放。")
+		WorldProgress.set_notice(GameText.t("在空中前方生成临时晶台，或靠近毒雾节点再按 C；无效释放不记排放。"))
 		return false
 	var body:=_add_platform(rect)
 	_temporary_platforms.append({"body":body,"rect":rect,"life":4.0})
@@ -353,6 +383,10 @@ func _install_mineral(index: int) -> void:
 	_mineral_platforms.append(rect)
 	if node.hazard>=0:
 		hazards[node.hazard].neutralized=true
+	if is_instance_valid(_filter_gate):
+		_filter_gate.get_child(0).set_deferred(&"disabled",mine_puzzle_solved())
+		if mine_puzzle_solved():
+			WorldProgress.set_notice(GameText.t("三个封印已完成。毒源停止，净化门已打开，前往 Eden City。"))
 
 
 func _install_route() -> void:
@@ -473,6 +507,24 @@ func _draw() -> void:
 		for x in range(int(rect.position.x),int(rect.end.x)-8,14):
 			draw_colored_polygon(PackedVector2Array([Vector2(x,rect.end.y),Vector2(x+7,rect.position.y),Vector2(x+14,rect.end.y)]),Color(0.77,0.36,0.34))
 	var source: Vector2=definition.source
+	for index in growth_points.size():
+		var point:=growth_points[index]
+		var strength:=1.0
+		if WorldProgress.has_ability(definition.ability) and point.distance_to(definition.source)<680:
+			strength=0.2
+		if definition.has("secondary_source") and WorldProgress.has_ability(definition.secondary_ability) and point.distance_to(definition.secondary_source)<680:
+			strength=0.2
+		if is_instance_valid(ritual) and not ritual.granted and point.distance_to(player.position)<680:
+			strength=maxf(0.15,1.0-ritual.elapsed/1.5)
+		var wind:=sin(_clock*1.4+index)*3.0
+		var tint:=Color(0.35,0.58,0.25,strength)
+		draw_line(point,point+Vector2(wind,-12),tint,2,true)
+		draw_colored_polygon(PackedVector2Array([point-Vector2(0,4),point+Vector2(-9+wind,-12),point+Vector2(wind,-10)]),tint)
+		draw_colored_polygon(PackedVector2Array([point-Vector2(0,7),point+Vector2(8+wind,-16),point+Vector2(wind,-12)]),Color(0.57,0.72,0.3,strength))
+	if region_id==&"grassland" and not mine_puzzle_solved():
+		draw_rect(Rect2(3900,350,20,150),Color(0.28,0.36,0.15,0.9))
+		for index in 3:
+			draw_circle(Vector2(3910,380+index*40),6,Color(0.66,0.9,0.45) if WorldProgress.is_collected(_entity_id("mineral_%d"%index)) else Color(0.17,0.19,0.11))
 	draw_rect(Rect2(source-Vector2(28,-3),Vector2(56,20)),Color(0.2,0.27,0.26))
 	draw_arc(source-Vector2(0,40),45.0,_clock*0.5,_clock*0.5+TAU*0.8,32,Color(definition.accent,0.45),2)
 	for point: Vector2 in _checkpoints:
@@ -504,6 +556,43 @@ func _draw() -> void:
 		var dimensions:=_companion_texture.get_size()*scale
 		for point in _companions:
 			draw_texture_rect(_companion_texture,Rect2(point-Vector2(dimensions.x*0.5,16),dimensions),false,Color(0.7,0.95,0.8))
+
+
+func mine_puzzle_solved() -> bool:
+	if region_id!=&"grassland" or WorldProgress.repaired_regions.has(region_id): return true
+	for index in definition.mineral_nodes.size():
+		if not WorldProgress.is_collected(_entity_id("mineral_%d"%index)): return false
+	return true
+
+
+func _update_toxin(delta: float) -> void:
+	if region_id!=&"grassland": return
+	var exposure_rate:=0.0
+	for hazard in hazards:
+		if not hazard.neutralized and not WorldProgress.route_open(hazard.region_ability) and hazard.area.intersects(Rect2(player.position-Vector2(14,24),Vector2(28,48))):
+			exposure_rate=maxf(exposure_rate,46.0 if hazard.phase()==2 else 8.0)
+	toxin=clampf(toxin+delta*(exposure_rate if exposure_rate>0 else -22.0),0,100)
+	_toxin_tick+=delta
+	if toxin>=75 and _toxin_tick>=1.0:
+		_toxin_tick=0
+		player.hurt(8)
+
+
+func _add_region_signs() -> void:
+	_signs.append({"label":_label(Vector2(110,405),"",28,Color(0.86,0.83,0.68)),"kind":0})
+	_signs.append({"label":_label(Vector2(112,442),"",18,definition.accent),"kind":1})
+	_signs.append({"label":_label(Vector2(112,472),"",13,Color(0.7,0.76,0.74)),"kind":2})
+	_refresh_language()
+
+
+func _refresh_language() -> void:
+	definition=CampaignLevels.definition(region_id)
+	for signpost in _signs:
+		match signpost.kind:
+			0: signpost.label.text=GameText.t(definition.subtitle)
+			1: signpost.label.text="%02d / 03    %s"%[AbilityCatalog.REGIONS.find(region_id)+1,definition.title]
+			2: signpost.label.text=definition.secret
+	if is_instance_valid(_source_sprite): _refresh_world()
 
 
 func _paint_platform(rect: Rect2,restored: bool=false) -> void:

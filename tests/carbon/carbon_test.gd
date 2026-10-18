@@ -9,6 +9,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
+	GameText.set_language("zh_CN",false)
 	# Ledger unit tests emit many synchronous events in one frame; audio is covered by the integration suite.
 	for event: Signal in [WorldProgress.ability_used,WorldProgress.ability_absorbed,WorldProgress.ability_returned,WorldProgress.checkpoint_changed,GameSession.checkpoint_resumed]:
 		for connection: Dictionary in event.get_connections():

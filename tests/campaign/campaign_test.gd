@@ -15,6 +15,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
+	GameText.set_language("zh_CN",false)
 	_app=preload("res://scenes/main.tscn").instantiate()
 	add_child(_app)
 	await _frames(4)
@@ -77,7 +78,7 @@ func _run() -> void:
 	await _action(&"eden_recycle")
 	_check(CarbonLedger.recycled_nodes==1,"same scrap cannot be credited twice")
 	await _exit()
-	_check(_level().definition.title=="毒雾矿场","junkyard exit enters toxic mine")
+	_check(_level().definition.title=="毒雾矿洞","junkyard exit enters toxic mine")
 	await _source(&"eden_absorb")
 	_check(WorldProgress.has_ability(&"mineralization") and not WorldProgress.has_ability(&"dash"),"mine teaches carbon mineralization instead of legacy dash")
 	await _teleport(Vector2(1150,596))
@@ -101,9 +102,13 @@ func _run() -> void:
 	_player()._mineral_recovery=0.0
 	await _action(&"eden_mineralize")
 	_check(hazard.neutralized and hazard.phase()==0,"mineralization converts local toxic hazard to safe crystal")
+	await _teleport(Vector2(2010,596))
+	_player()._mineral_recovery=0.0
+	await _action(&"eden_mineralize")
+	_check(_level().mine_puzzle_solved(),"all three mineral seals open the purification gate")
 	await _capture("carbon-02-toxic-mine")
 	await _exit()
-	_check(_level().definition.title=="伊甸园","mine exit enters apparently pristine Eden")
+	_check(_level().definition.title=="伊甸城","mine exit enters apparently pristine Eden")
 	await _source(&"eden_absorb")
 	_check(WorldProgress.has_ability(&"shield"),"Eden primary source teaches shield")
 	await _teleport(_level().definition.secondary_source+Vector2(0,6))
@@ -171,6 +176,8 @@ func _run() -> void:
 	var boss: CampaignEnemy=_level().enemies[-1]
 	boss.position=Vector2(3810,576)
 	boss._attack_cooldown=0
+	boss._windup=0
+	boss._recovery=0
 	_player()._invulnerability=0
 	health_before=GameSession.health
 	await _physics(3)
@@ -316,6 +323,10 @@ func _action(action: StringName,held: bool=false) -> void:
 	if not held:
 		Input.action_release(action)
 		await _physics(1)
+	if action==&"eden_absorb":
+		for wait in 150:
+			if WorldProgress.narrative_kind!=&"learning": break
+			await _physics(1)
 
 
 func _physics(count: int) -> void:
@@ -342,6 +353,8 @@ func _click(button: Button) -> void:
 		get_viewport().push_input(event,true)
 		await _frames(1)
 	await _frames(3)
+	if _app._intro.visible:
+		await _click(_app._intro.skip_button)
 
 
 func _check(condition: bool,label: String) -> void:
@@ -355,6 +368,8 @@ func _check(condition: bool,label: String) -> void:
 func _capture(label: String) -> void:
 	if not "--screenshots" in OS.get_cmdline_user_args(): return
 	await _frames(4)
-	await RenderingServer.frame_post_draw
+	await get_tree().process_frame
+	RenderingServer.force_draw(false)
+	RenderingServer.force_sync()
 	DirAccess.make_dir_recursive_absolute("res://test-output/screenshots")
 	_check(get_viewport().get_texture().get_image().save_png("res://test-output/screenshots/"+label+".png")==OK,"capture "+label)

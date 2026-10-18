@@ -42,12 +42,12 @@ func _ready() -> void:
 	$GameplayBridge.bind_source(player.get_node("Stats"), true)
 	WorldProgress.world_changed.connect(_refresh_world)
 	_add_mob(Vector2(740, 596), &"mob_0")
-	_add_world_label(Vector2(60, 325), "遗庭 / %s" % AbilityCatalog.region_name(region_id), 28)
-	_add_world_label(Vector2(60, 365), "E 吸收 / R 交还 · F1 光刃接口试用（地点待定）", 16)
+	_add_world_label(Vector2(60, 325), GameText.t("遗庭 / %s") % AbilityCatalog.region_name(region_id), 28)
+	_add_world_label(Vector2(60, 365), GameText.t("E 吸收 / R 交还 · F1 光刃接口试用（地点待定）"), 16)
 	_add_source()
-	_hazard_label = _add_world_label(Vector2(470, 550), "尖刺 -25", 16)
-	_add_world_label(Vector2(865, 645), "深渊", 16)
-	_add_world_label(Vector2(2380, 475), "折返起点 →" if region_id == &"remnant_sea" else "下一场景 →", 18)
+	_hazard_label = _add_world_label(Vector2(470, 550), GameText.t("尖刺 -25"), 16)
+	_add_world_label(Vector2(865, 645), GameText.t("深渊"), 16)
+	_add_world_label(Vector2(2380, 475), GameText.t("折返起点 →") if region_id == &"remnant_sea" else GameText.t("下一场景 →"), 18)
 	_refresh_world()
 
 
@@ -142,7 +142,7 @@ func _on_entrance_entered(body: Node2D) -> void:
 	elif WorldProgress.required_returns_complete():
 		GameSession.complete_level()
 	else:
-		WorldProgress.set_notice("返程交还二段跳、冲刺、护盾后，从这里回家。")
+		WorldProgress.set_notice(GameText.t("返程交还二段跳、冲刺、护盾后，从这里回家。"))
 
 
 func _entity_id(local_id: String) -> StringName:
@@ -160,10 +160,10 @@ func _add_source() -> void:
 
 func _refresh_world() -> void:
 	if _hazard_label != null:
-		_hazard_label.text = "屏障保护" if region_id == &"remnant_sea" and WorldProgress.route_open(&"shield") else "尖刺 -25"
+		_hazard_label.text = GameText.t("屏障保护") if region_id == &"remnant_sea" and WorldProgress.route_open(&"shield") else GameText.t("尖刺 -25")
 	if _source_label != null:
-		var names := ["E 吸收", "R 交还", "已交还 / 通路恢复"]
-		_source_label.text = "%s能力源\n%s" % [AbilityCatalog.DEFINITIONS[_region_ability].name, names[WorldProgress.ability_state(_region_ability)]]
+		var names := [GameText.t("E 吸收"), GameText.t("R 交还"), GameText.t("已交还 / 通路恢复")]
+		_source_label.text = GameText.t("%s能力源\n%s") % [AbilityCatalog.definition(_region_ability).name, names[WorldProgress.ability_state(_region_ability)]]
 	if WorldProgress.route_open(_region_ability) and not _route_built:
 		_route_built = true
 		_install_return_route.call_deferred()

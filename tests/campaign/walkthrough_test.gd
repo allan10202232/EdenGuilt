@@ -20,6 +20,7 @@ func _ready() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	GameText.set_language("zh_CN",false)
 	app=preload("res://scenes/main.tscn").instantiate()
 	add_child(app)
 	await _tick(4)
@@ -186,6 +187,11 @@ func _action(action: StringName) -> void:
 	await _tick(2)
 	Input.action_release(action)
 	await _tick(2)
+	if action==&"eden_absorb":
+		for wait in 150:
+			if WorldProgress.narrative_kind!=&"learning": break
+			await _tick(1)
+
 
 func _walk(target: float) -> void:
 	if failures: return
@@ -269,12 +275,17 @@ func _click(button: Button) -> void:
 		get_viewport().push_input(event,true)
 		await _tick(1)
 	await _tick(3)
+	if app._intro.visible:
+		await _click(app._intro.skip_button)
+
 
 func _snapshot(label: String) -> void:
 	_record.append({"event":label,"region":WorldProgress.current_scene,"health":GameSession.health,"carbon":CarbonLedger.gross_kg,"notice":WorldProgress.notice})
 	print("PLAY: ",label," hp=",GameSession.health," carbon=",CarbonLedger.gross_kg)
 	if DisplayServer.get_name()=="headless": return
-	await RenderingServer.frame_post_draw
+	await get_tree().process_frame
+	RenderingServer.force_draw(false)
+	RenderingServer.force_sync()
 	DirAccess.make_dir_recursive_absolute("res://test-output/walkthrough")
 	_shots+=1
 	get_viewport().get_texture().get_image().save_png("res://test-output/walkthrough/%02d-%s.png"%[_shots,label])

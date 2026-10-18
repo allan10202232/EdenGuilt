@@ -11,6 +11,7 @@ func _ready() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	GameText.set_language("zh_CN",false)
 	app=preload("res://scenes/main.tscn").instantiate()
 	add_child(app)
 	await _tick(4)
@@ -35,14 +36,16 @@ func _run() -> void:
 	await _walk(530)
 	await _action(&"eden_absorb")
 	await _walk(880)
-	await _leap(1100)
-	await _walk(1150)
+	await _leap(1060)
 	await _action(&"eden_mineralize")
+	_check(WorldProgress.is_collected(&"grassland/mineral_0"),"seal I is reachable from the lower approach")
 	await _walk(1710)
 	await _action(&"eden_mineralize")
+	_check(WorldProgress.is_collected(&"grassland/mineral_1"),"seal II fixes the upstream toxin source")
 	await _walk(2010)
 	await _tick(8)
 	await _action(&"eden_mineralize")
+	_check(WorldProgress.is_collected(&"grassland/mineral_2"),"seal III fixes the downstream toxin source")
 	await _walk(2560)
 	await _leap(2860)
 	await _walk(3320)
@@ -127,6 +130,11 @@ func _action(action: StringName) -> void:
 	await _tick(2)
 	Input.action_release(action)
 	await _tick(2)
+	if action==&"eden_absorb":
+		for wait in 150:
+			if WorldProgress.narrative_kind!=&"learning": break
+			await _tick(1)
+
 
 func _walk(target: float) -> void:
 	if failures: return

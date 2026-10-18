@@ -17,7 +17,7 @@ func _ready() -> void:
 	_add_solid(Rect2(-30, 0, 30, 720))
 	_add_solid(Rect2(1152, 0, 30, 720))
 	var positions := [Vector2(270, 596), Vector2(365, 596), Vector2(500, 596), Vector2(130, 596)]
-	var descriptions := ["近身\n70 px", "长距离\n165 px", "范围外\n300 px", "身后\n70 px"]
+	var descriptions := [GameText.t("近身\n70 px"), GameText.t("长距离\n165 px"), GameText.t("范围外\n300 px"), GameText.t("身后\n70 px")]
 	for index in positions.size():
 		var dummy := preload("res://scenes/combat/melee_dummy.tscn").instantiate() as MeleeDummy
 		dummy.position = positions[index]
@@ -35,9 +35,9 @@ func _ready() -> void:
 	player.combat.attack_started.connect(_on_attack_started)
 	player.combat.target_hit.connect(func(_receiver: Node, hit: Dictionary) -> void:
 		var title: String = player.combat.close_attack.profile.display_name if hit.attack_id == player.combat.close_attack.profile.id else player.combat.reach_attack.profile.display_name
-		%Status.text = "%s 命中：伤害 %d；每刀每目标只结算一次" % [title, hit.damage]
+		%Status.text = GameText.t("%s 命中：伤害 %d；每刀每目标只结算一次") % [title, hit.damage]
 	)
-	%Status.text = "光刃已为本测试房开启。先原地朝右，比较左键和右键的命中范围。"
+	%Status.text = GameText.t("光刃已为本测试房开启。先原地朝右，比较左键和右键的命中范围。")
 
 
 func reset_training() -> void:
@@ -48,11 +48,11 @@ func reset_training() -> void:
 	player.face_direction(1.0)
 	for dummy in dummies:
 		dummy.reset()
-	%Status.text = "木桩与角色位置已重置；原地左键命中近身木桩，右键还能命中长距离木桩。"
+	%Status.text = GameText.t("木桩与角色位置已重置；原地左键命中近身木桩，右键还能命中长距离木桩。")
 
 
 func _on_attack_started(move: MeleeAttackProfile) -> void:
-	%Status.text = "%s：范围 %.0f px · 前摇 %.2f s · 生效 %.2f s · 后摇 %.2f s · 冷却 %.2f s" % [
+	%Status.text = GameText.t("%s：范围 %.0f px · 前摇 %.2f s · 生效 %.2f s · 后摇 %.2f s · 冷却 %.2f s") % [
 		move.display_name, move.reach, move.windup, move.active_time, move.recovery, move.cooldown,
 	]
 

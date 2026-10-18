@@ -1,5 +1,7 @@
 extends Control
 
+var _notice_seconds: float = 0.0
+
 
 func _ready() -> void:
 	GameSession.health_changed.connect(_update_health)
@@ -10,14 +12,36 @@ func _ready() -> void:
 	WorldProgress.checkpoint_changed.connect(_update_progress)
 	WorldProgress.enemy_defeated.connect(func(_id: StringName) -> void: _update_progress())
 	WorldProgress.shield_changed.connect(func(_active: bool) -> void: _update_progress())
-	WorldProgress.notice_changed.connect(func(text: String) -> void: %Notice.text = text)
+	WorldProgress.notice_changed.connect(_show_notice)
+	$Top/Panel.add_theme_stylebox_override(&"panel", GothicSkin.panel(0, 14))
+	$Abilities.add_theme_stylebox_override(&"panel", GothicSkin.panel(0, 14))
+	$Hint.add_theme_stylebox_override(&"normal", GothicSkin.panel(0, 10))
+	%Notice.add_theme_stylebox_override(&"normal", GothicSkin.panel(0, 10))
 	%MenuButton.pressed.connect(_back_to_menu)
 	%MuteButton.pressed.connect(func() -> void: SoundManager.set_muted(not SoundManager.muted))
 	_update_health(GameSession.health, GameSession.max_health)
 	_update_score(GameSession.score)
 	_update_sound(SoundManager.muted)
 	_update_progress()
-	%Notice.text = WorldProgress.notice
+	_show_notice(WorldProgress.notice)
+	GameText.language_changed.connect(func() -> void:
+		_update_progress()
+		_update_health(GameSession.health,GameSession.max_health)
+		_update_score(GameSession.score)
+		_update_sound(SoundManager.muted)
+		%Notice.text=GameText.t(WorldProgress.notice)
+	)
+
+
+func _show_notice(text: String) -> void:
+	%Notice.text = text
+	_notice_seconds = 9.0
+	%Notice.modulate.a = 1.0
+
+
+func _process(delta: float) -> void:
+	_notice_seconds = maxf(0.0, _notice_seconds-delta)
+	%Notice.modulate.a = minf(1.0, _notice_seconds)
 
 
 func _update_progress() -> void:
@@ -26,26 +50,23 @@ func _update_progress() -> void:
 	for index in ids.size():
 		var id: StringName = ids[index]
 		var definition := AbilityCatalog.definition(id)
-		var status := "未获得"
+		var status := GameText.t("未获得")
 		match WorldProgress.ability_state(id):
 			WorldProgress.AbilityState.BORROWED:
-				status = "可用"
+				status = GameText.t("可用")
 			WorldProgress.AbilityState.RETURNED:
-				status = "已交还"
+				status = GameText.t("已交还")
 		if id == &"shield" and WorldProgress.shield_active:
-			status = "防御中"
+			status = GameText.t("防御中")
 		labels[index].text = "%s [%s]  %s" % [definition.name, definition.key, status]
-		labels[index].modulate = Color(0.65, 0.88, 0.7) if WorldProgress.has_ability(id) else Color(0.6, 0.67, 0.65)
-	var land_names := {&"intact": "完整", &"wasted": "荒芜", &"restored": "通路已恢复"}
-	%RegionLabel.text = "%s · %s   |   土地：%s   |   检查点：%s" % [
-		AbilityCatalog.region_name(WorldProgress.current_scene), "返程" if WorldProgress.returning else "去程",
+		labels[index].modulate = GothicSkin.IVORY if WorldProgress.has_ability(id) else GothicSkin.MUTED
+		labels[index].add_theme_stylebox_override(&"normal", GothicSkin.panel(3 if WorldProgress.has_ability(id) else 0, 8))
+	var land_names := {&"intact": GameText.t("完整"), &"wasted": GameText.t("荒芜"), &"restored": GameText.t("通路已恢复")}
+	%RegionLabel.text = GameText.t("%s · %s   |   土地：%s   |   检查点：%s") % [
+		AbilityCatalog.region_name(WorldProgress.current_scene), GameText.t("返程") if WorldProgress.returning else GameText.t("去程"),
 		land_names[WorldProgress.land_state(WorldProgress.current_scene)], WorldProgress.checkpoint_name(),
 	]
 	if WorldProgress.campaign_rules:
-		%Notice.offset_top=258.0
-		%Notice.offset_bottom=302.0
-		$Hint.offset_top=232.0
-		$Hint.offset_bottom=254.0
 		$Hint.text=_campaign_objective()
 		$Hint.show()
 
@@ -55,38 +76,38 @@ func _campaign_objective() -> String:
 	if WorldProgress.core_reversed:
 		if region==&"remnant_sea":
 			if not WorldProgress.repaired_regions.has(region):
-				return "目标 ← 档案门口 R 与居民共建通路，再回两处能力源卸下能力。"
+				return GameText.t("目标 ← 档案门口 R 与居民共建通路，再回两处能力源卸下能力。")
 			if WorldProgress.has_ability(&"black_pierce"):
-				return "目标 ← 紫色能力源 R 卸下黑穿；伊甸园有两处能力源。"
+				return GameText.t("目标 ← 紫色能力源 R 卸下黑穿；伊甸城有两处能力源。")
 			if WorldProgress.has_ability(&"shield"):
-				return "目标 ← 绿色能力源 R 卸下护盾，再从本关左端返回矿场。"
-			return "目标 ← 两种能力已卸下，从左端返回毒雾矿场。"
+				return GameText.t("目标 ← 绿色能力源 R 卸下护盾，再从本关左端返回矿洞。")
+			return GameText.t("目标 ← 两种能力已卸下，从左端返回毒雾矿洞。")
 		if region==&"grassland":
-			return "目标 ← 回到矿场能力源按 R 修复并卸下碳矿化。" if WorldProgress.has_ability(&"mineralization") else "目标 ← 矿场已修复，从左端返回垃圾场。"
-		return "目标 ← 回出生地能力源按 R 修复并卸下二段跳。" if WorldProgress.has_ability(&"double_jump") else "目标 ← 四种能力已卸下，继续向左回家。"
+			return GameText.t("目标 ← 回到矿洞能力源按 R 修复并卸下碳矿化。") if WorldProgress.has_ability(&"mineralization") else GameText.t("目标 ← 矿洞已修复，从左端返回垃圾场。")
+		return GameText.t("目标 ← 回出生地能力源按 R 修复并卸下二段跳。") if WorldProgress.has_ability(&"double_jump") else GameText.t("目标 ← 四种能力已卸下，继续向左回家。")
 	if region==&"lone_tree":
-		return "目标 → 穿过断崖前往矿场；空格可二段跳。" if WorldProgress.has_ability(&"double_jump") else "目标 → 靠近绿色能力源，按 E 学习二段跳。"
+		return GameText.t("目标 → 穿过断崖前往矿洞；空格可二段跳。") if WorldProgress.has_ability(&"double_jump") else GameText.t("目标 → 靠近绿色能力源，按 E 学习二段跳。")
 	if region==&"grassland":
-		return "目标 → C 固化毒雾节点、生成晶桥，前往伊甸园。" if WorldProgress.has_ability(&"mineralization") else "目标 → 靠近矿场能力源，按 E 学习碳矿化。"
+		return GameText.t("目标 → 按 I、II、III 的顺序用 C 固化三个节点，打开净化门。") if WorldProgress.has_ability(&"mineralization") else GameText.t("目标 → 靠近矿洞能力源，按 E 学习碳矿化。")
 	if not WorldProgress.has_ability(&"shield"):
-		return "目标 → 绿色能力源 E 学护盾（Q），向右探索伊甸园。"
+		return GameText.t("目标 → 绿色能力源 E 学护盾（Q），向右探索伊甸城。")
 	if not WorldProgress.has_ability(&"black_pierce"):
-		return "目标 → 紫色能力源 E 学黑穿（F），用于穿过紫色暗壁。"
-	return "目标 → 守卫已倒下，进入最右侧档案揭开真相。" if WorldProgress.is_enemy_defeated(&"remnant_sea/boss") else "目标 → F 穿暗壁，击败右侧伊甸守卫，进入真相档案。"
+		return GameText.t("目标 → 紫色能力源 E 学黑穿（F），用于穿过紫色暗壁。")
+	return GameText.t("目标 → 守卫已倒下，进入最右侧档案揭开真相。") if WorldProgress.is_enemy_defeated(&"remnant_sea/boss") else GameText.t("目标 → F 穿暗壁，击败右侧伊甸守卫，进入真相档案。")
 
 
 func _update_health(current: int, maximum: int) -> void:
 	%HealthBar.max_value = maximum
 	%HealthBar.value = current
-	%HealthLabel.text = "生命  %d / %d" % [current, maximum]
+	%HealthLabel.text = GameText.t("生命  %d / %d") % [current, maximum]
 
 
 func _update_score(value: int) -> void:
-	%ScoreLabel.text = "得分  %04d" % value
+	%ScoreLabel.text = GameText.t("得分  %04d") % value
 
 
 func _update_sound(muted: bool) -> void:
-	%MuteButton.text = "声音：关闭" if muted else "声音：开启"
+	%MuteButton.text = GameText.t("声音：关闭") if muted else GameText.t("声音：开启")
 
 
 func _back_to_menu() -> void:

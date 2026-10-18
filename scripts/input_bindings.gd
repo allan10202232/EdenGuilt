@@ -8,6 +8,7 @@ static func configure() -> void:
 		&"eden_jump": [KEY_SPACE], &"eden_run": [KEY_SHIFT], &"eden_shield": [KEY_Q],
 		&"eden_absorb": [KEY_E], &"eden_return": [KEY_R], &"eden_trial_blade": [KEY_F1],
 		&"eden_mineralize": [KEY_C], &"eden_black_pierce": [KEY_F], &"eden_recycle": [KEY_V],
+		&"eden_talk": [KEY_T],
 	}
 	for action: StringName in bindings:
 		if InputMap.has_action(action):

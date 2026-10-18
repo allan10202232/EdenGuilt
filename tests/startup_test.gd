@@ -11,7 +11,7 @@ func _ready() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
-	for singleton in [&"GameSession", &"WorldProgress", &"CarbonLedger", &"SoundManager"]:
+	for singleton in [&"GameText", &"GameSession", &"WorldProgress", &"CarbonLedger", &"SoundManager"]:
 		var instance:=get_node_or_null("/root/"+singleton)
 		_check(instance!=null and instance.get_script()!=null,"compiled autoload exists: "+singleton)
 	var path: String=ProjectSettings.get_setting("application/run/main_scene","")

@@ -27,7 +27,7 @@ static var DATA: Dictionary = {
 		"mineral_nodes": [], "dark_walls": [],
 	},
 	&"toxic_mine": {
-		"title": "毒雾矿场", "subtitle": "THE TOXIC SEAM", "width": 4080.0, "height": 960.0,
+		"title": "毒雾矿洞", "subtitle": "THE TOXIC CAVERN", "width": 4080.0, "height": 960.0,
 		"accent": Color(0.39,0.77,0.81), "row": 2, "ability": &"mineralization",
 		"enemy": "crystal_miner", "background": "mine", "source": Vector2(530,590),
 		"platforms": [Rect2(0,620,1200,340),Rect2(1440,620,1160,340),Rect2(2760,500,1320,460),
@@ -42,7 +42,7 @@ static var DATA: Dictionary = {
 		"bridges": [Rect2(1200,620,240,80)],
 		"ramps": [PackedVector2Array([Vector2(2600,620),Vector2(2760,500),Vector2(2760,960),Vector2(2600,960)])],
 		"exit": Vector2(3990,450), "gate": Rect2(1730,340,18,280),
-		"secret": "C 碳矿化 +1 kg：将节点毒雾固化成晶桥；先看预警，再通过喷口。",
+		"secret": "解谜：I 晶桥 → II 上游毒源 → III 下游毒源。按 C 矿化，集齐三个封印打开净化门。",
 		"recycling": [Vector2(810,590),Vector2(1530,590),Vector2(2400,590),Vector2(3640,470)],
 		"mineral_nodes": [
 			{"point":Vector2(1150,590),"bridge":Rect2(1200,620,240,40),"hazard":-1},
@@ -51,7 +51,7 @@ static var DATA: Dictionary = {
 		], "dark_walls": [],
 	},
 	&"eden_garden": {
-		"title": "伊甸园", "subtitle": "EDEN · THE TEN PERCENT", "width": 4400.0, "height": 1080.0,
+		"title": "伊甸城", "subtitle": "EDEN CITY · THE TEN PERCENT", "width": 4400.0, "height": 1080.0,
 		"accent": Color(0.79,0.86,0.51), "row": 0, "ability": &"shield",
 		"enemy": "forest_crawler", "background": "eden_garden", "source": Vector2(420,590),
 		"platforms": [Rect2(0,620,1000,460),Rect2(1280,620,920,460),Rect2(2200,820,700,260),Rect2(2900,620,1500,460),
@@ -75,7 +75,9 @@ static var DATA: Dictionary = {
 
 static func definition(id: StringName) -> Dictionary:
 	var key: StringName = ALIASES.get(id,id)
-	return DATA.get(key,DATA[&"junkyard_start"]).duplicate(true)
+	var result: Dictionary=DATA.get(key,DATA[&"junkyard_start"]).duplicate(true)
+	for field in ["title","secret"]: result[field]=GameText.t(result[field])
+	return result
 
 
 static func texture(path: String) -> Texture2D:

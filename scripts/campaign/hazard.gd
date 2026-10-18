@@ -31,6 +31,13 @@ func _draw() -> void:
 	var active:=phase()
 	var safe:=neutralized or WorldProgress.route_open(region_ability)
 	var tint:=Color(0.28,0.76,0.87) if safe else Color(0.96,0.3,0.22) if active==2 else Color(0.96,0.67,0.27)
+	if region_ability==&"mineralization":
+		tint=Color(0.53,0.82,0.66) if safe else Color(0.59,0.71,0.19)
+		if not safe:
+			for index in 12:
+				var x:=area.position.x+fposmod(index*17.0+sin(_clock*0.9+index)*12,area.size.x)
+				var y:=area.end.y-fposmod(_clock*35+index*27,area.size.y)
+				draw_circle(Vector2(x,y),18+sin(index+_clock)*5,Color(tint,0.14 if active==2 else 0.04))
 	draw_rect(Rect2(area.position-Vector2(12,12),Vector2(area.size.x+24,16)),Color(0.18,0.22,0.25))
 	draw_rect(Rect2(area.position,Vector2(area.size.x,4)),tint)
 	if active>0 or safe:
@@ -38,4 +45,4 @@ func _draw() -> void:
 		for x in range(int(area.position.x)+8,int(area.end.x),15):
 			draw_line(Vector2(x,area.position.y),Vector2(x,area.end.y),Color(tint,0.8 if active==2 else 0.25),2)
 	if active==1:
-		draw_string(ThemeDB.fallback_font,area.position+Vector2(-4,-22),"即将喷发",HORIZONTAL_ALIGNMENT_LEFT,-1,15,tint)
+		draw_string(ThemeDB.fallback_font,area.position+Vector2(-4,-22),GameText.t("即将喷发"),HORIZONTAL_ALIGNMENT_LEFT,-1,15,tint)

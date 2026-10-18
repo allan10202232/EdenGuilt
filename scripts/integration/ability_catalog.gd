@@ -12,12 +12,15 @@ const DEFINITIONS: Dictionary = {
 	&"mineralization": {"name": "碳矿化", "region": &"grassland", "key": "C", "route": "居民共同固化毒雾、修筑晶桥", "sound": &"absorb"},
 	&"black_pierce": {"name": "黑穿", "region": &"remnant_sea", "key": "F", "route": "居民拆除专用暗壁，打开公共通路", "sound": &"dash"},
 }
-const REGION_NAMES: Dictionary = {&"lone_tree": "垃圾场", &"grassland": "毒雾矿场", &"remnant_sea": "伊甸园"}
+const REGION_NAMES: Dictionary = {&"lone_tree": "垃圾场", &"grassland": "毒雾矿洞", &"remnant_sea": "伊甸城"}
 
 
 static func definition(id: StringName) -> Dictionary:
-	return DEFINITIONS.get(id, {}).duplicate(true)
+	var result: Dictionary=DEFINITIONS.get(id, {}).duplicate(true)
+	for key in ["name","key","route"]:
+		if result.has(key): result[key]=GameText.t(result[key])
+	return result
 
 
 static func region_name(id: StringName) -> String:
-	return REGION_NAMES.get(id, String(id))
+	return GameText.t(REGION_NAMES.get(id, String(id)))

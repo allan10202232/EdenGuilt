@@ -28,6 +28,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
+	GameText.set_language("zh_CN",false)
 	_arena = Node2D.new()
 	add_child(_arena)
 	_source = _dummy(Vector2(300, 400))
@@ -250,7 +251,9 @@ func _click(point: Vector2, button: MouseButton) -> void:
 func _capture(label: String) -> void:
 	if not "--screenshots" in OS.get_cmdline_user_args():
 		return
-	await RenderingServer.frame_post_draw
+	await get_tree().process_frame
+	RenderingServer.force_draw(false)
+	RenderingServer.force_sync()
 	DirAccess.make_dir_recursive_absolute("res://test-output/screenshots")
 	var error := get_viewport().get_texture().get_image().save_png("res://test-output/screenshots/%s.png" % label)
 	_check(error == OK, "capture " + label)

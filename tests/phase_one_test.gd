@@ -16,6 +16,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
+	GameText.set_language("zh_CN",false)
 	_app = preload("res://scenes/main.tscn").instantiate()
 	_app.campaign_mode = false
 	add_child(_app)
@@ -98,7 +99,7 @@ func _run() -> void:
 	WorldProgress.scene_requested.connect(_test_transition_guard, CONNECT_ONE_SHOT)
 	await _teleport(Vector2(2530, 575))
 	_check(WorldProgress.current_scene == &"grassland", "right exit changes to grassland")
-	_check(WorldProgress.checkpoint_name() == "毒雾矿场" and _level().region_id == &"grassland", "scene entry updates checkpoint and scene together")
+	_check(WorldProgress.checkpoint_name() == "毒雾矿洞" and _level().region_id == &"grassland", "scene entry updates checkpoint and scene together")
 	_check(GameSession.score == 250 and GameSession.health == 100, "scene change preserves stat source data")
 	_check(_app.get_node("LevelRoot").get_child_count() == 1, "scene replacement leaves exactly one active level")
 	_check(not WorldProgress.return_ability(&"double_jump") and WorldProgress.has_ability(&"double_jump"), "ability cannot be returned in another region")
@@ -111,7 +112,7 @@ func _run() -> void:
 	_check(WorldProgress.current_scene == &"grassland" and _player().position.x < 130.0, "death restores latest scene entry position")
 	_check(WorldProgress.has_ability(&"dash") and WorldProgress.is_enemy_defeated(&"lone_tree/mob_0"), "death retains acquired abilities and defeated history")
 	await _teleport(Vector2(2530, 575))
-	_check(WorldProgress.current_scene == &"remnant_sea" and WorldProgress.checkpoint_name() == "伊甸园", "second exit updates checkpoint to remnant sea")
+	_check(WorldProgress.current_scene == &"remnant_sea" and WorldProgress.checkpoint_name() == "伊甸城", "second exit updates checkpoint to remnant sea")
 	await _at_source(&"eden_absorb")
 	_check(WorldProgress.has_ability(&"shield"), "remnant sea absorbs shield")
 	Input.action_press(&"eden_shield")
@@ -282,6 +283,10 @@ func _action(action: StringName) -> void:
 	await _physics_frames(2)
 	Input.action_release(action)
 	await _physics_frames(1)
+	if action==&"eden_absorb":
+		for wait in 150:
+			if WorldProgress.narrative_kind!=&"learning": break
+			await _physics_frames(1)
 
 
 func _teleport(point: Vector2) -> void:
@@ -310,7 +315,9 @@ func _capture(label: String) -> void:
 	if not "--screenshots" in OS.get_cmdline_user_args():
 		return
 	await _frames(3)
-	await RenderingServer.frame_post_draw
+	await get_tree().process_frame
+	RenderingServer.force_draw(false)
+	RenderingServer.force_sync()
 	DirAccess.make_dir_recursive_absolute("res://test-output/screenshots")
 	var error := get_viewport().get_texture().get_image().save_png("res://test-output/screenshots/%s.png" % label)
 	_check(error == OK, "capture " + label)

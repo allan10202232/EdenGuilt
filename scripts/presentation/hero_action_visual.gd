@@ -69,7 +69,7 @@ func _on_state(_previous: int,current: int) -> void:
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(actor) or not actor.is_inside_tree(): return
-	if not _dead and not WorldProgress.can_play(): return
+	if not _dead and not WorldProgress.can_play() and WorldProgress.narrative_kind!=&"learning": return
 	_clock+=delta
 	_phase_clock+=delta
 	_pose_left=maxf(0.0,_pose_left-delta)

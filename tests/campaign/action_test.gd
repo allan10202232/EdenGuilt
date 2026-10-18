@@ -9,6 +9,7 @@ func _ready() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	GameText.set_language("zh_CN",false)
 	app=preload("res://scenes/main.tscn").instantiate()
 	add_child(app)
 	await _physics(4)
@@ -156,6 +157,11 @@ func _action(action: StringName) -> void:
 	await _physics(2)
 	Input.action_release(action)
 	await _physics(1)
+	if action==&"eden_absorb":
+		for wait in 150:
+			if WorldProgress.narrative_kind!=&"learning": break
+			await _physics(1)
+
 
 func _place(point: Vector2) -> void:
 	_player().position=point
@@ -164,7 +170,9 @@ func _place(point: Vector2) -> void:
 
 func _capture(label: String) -> void:
 	if not "--screenshots" in OS.get_cmdline_user_args(): return
-	await RenderingServer.frame_post_draw
+	await get_tree().process_frame
+	RenderingServer.force_draw(false)
+	RenderingServer.force_sync()
 	DirAccess.make_dir_recursive_absolute("res://test-output/screenshots")
 	_check(get_viewport().get_texture().get_image().save_png("res://test-output/screenshots/"+label+".png")==OK,"capture "+label)
 

@@ -206,7 +206,7 @@ func try_black_pierce() -> bool:
 		destination=global_position+motion*(1.0-float(index+1)/48.0)
 	collision_mask=previous_mask
 	if absf(destination.x-global_position.x)<12.0:
-		WorldProgress.set_notice("普通地形会挡住黑穿；无有效位移不记排放。")
+		WorldProgress.set_notice(GameText.t("普通地形会挡住黑穿；无有效位移不记排放。"))
 		return false
 	global_position=destination
 	combat.cancel()

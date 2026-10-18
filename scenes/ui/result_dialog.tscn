@@ -16,7 +16,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.02, 0.03, 0.04, 0.88)
+color = Color(0.045, 0.027, 0.018, 0.9)
 
 [node name="Center" type="CenterContainer" parent="."]
 layout_mode = 1
@@ -36,7 +36,7 @@ theme_override_constants/separation = 20
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.64, 0.78, 0.66, 1)
+theme_override_colors/font_color = Color(0.74, 0.59, 0.36, 1)
 horizontal_alignment = 1
 
 [node name="Title" type="Label" parent="Center/Panel/Content"]

@@ -36,7 +36,7 @@ try {
     # Catch a lost autoload before Godot emits cascading parser errors (which can
     # still return exit code 0 during editor import).
     $projectConfig = Get-Content -Raw -LiteralPath (Join-Path $projectDirectory 'project.godot')
-    foreach ($singleton in @('GameSession', 'WorldProgress', 'CarbonLedger', 'SoundManager')) {
+    foreach ($singleton in @('GameText', 'GameSession', 'WorldProgress', 'CarbonLedger', 'SoundManager')) {
         $registration = '(?m)^' + [regex]::Escape($singleton) + '="\*res://([^"\r\n]+)"\s*$'
         $configMatch = [regex]::Match($projectConfig, $registration)
         if (-not $configMatch.Success) {
@@ -62,6 +62,15 @@ try {
         '--log-file', $startupLog, 'res://tests/startup_test.tscn'
     ) -LogPath $startupLog -Summary 'STARTUP'
     Write-Host "Startup configuration passed. Log: $startupLog"
+
+    $storyLog = Join-Path $outputDirectory 'story.log'
+    $storyArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $storyLog)
+    if ($Screenshots) { $storyArguments += @('--rendering-method', 'gl_compatibility') }
+    else { $storyArguments += '--headless' }
+    $storyArguments += 'res://tests/campaign/story_test.tscn'
+    if ($Screenshots) { $storyArguments += @('--', '--screenshots') }
+    Invoke-GodotCheck -EngineArguments $storyArguments -LogPath $storyLog -Summary 'STORY'
+    Write-Host "Bilingual opening, NPCs, learning and toxin puzzle passed. Log: $storyLog"
 
     $testLog = Join-Path $outputDirectory $(if ($Screenshots) { 'phase-one-visual.log' } else { 'phase-one-headless.log' })
     $engineArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $testLog)
@@ -114,6 +123,13 @@ try {
     if ($Screenshots) { $actionArguments += @('--', '--screenshots') }
     Invoke-GodotCheck -EngineArguments $actionArguments -LogPath $actionLog -Summary 'ACTIONS'
     Write-Host "Character actions passed. Log: $actionLog"
+
+    $enemyLog = Join-Path $outputDirectory 'enemy-actions.log'
+    Invoke-GodotCheck -EngineArguments @(
+        '--headless', '--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60',
+        '--log-file', $enemyLog, 'res://tests/campaign/enemy_animation_test.tscn'
+    ) -LogPath $enemyLog -Summary 'ENEMY_ACTIONS'
+    Write-Host "Enemy animation and attack synchronization passed. Log: $enemyLog"
 
     $routeLog = Join-Path $outputDirectory 'route.log'
     Invoke-GodotCheck -EngineArguments @(

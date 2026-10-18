@@ -1,24 +1,29 @@
 extends Control
+var _snapshot: Dictionary = {}
 
 
 func _ready() -> void:
 	%RestartButton.pressed.connect(_restart)
 	%CheckpointButton.pressed.connect(_resume)
 	%MenuButton.pressed.connect(_menu)
+	GameText.language_changed.connect(func() -> void:
+		if visible and not _snapshot.is_empty(): present(_snapshot)
+	)
 
 
 func present(result: Dictionary) -> void:
+	_snapshot=result.duplicate(true)
 	var won: bool = result.get("won", false)
-	%Title.text = "逃离遗庭" if won else "旅途终止"
-	%Subtitle.text = "VICTORY / 挑战完成" if won else "GAME OVER / 检查点恢复"
-	%Summary.text = "得分  %04d\n剩余生命  %d / %d\n用时  %.1f 秒" % [
+	%Title.text = GameText.t("逃离遗庭") if won else GameText.t("旅途终止")
+	%Subtitle.text = GameText.t("VICTORY / 挑战完成") if won else GameText.t("GAME OVER / 检查点恢复")
+	%Summary.text = GameText.t("得分  %04d\n剩余生命  %d / %d\n用时  %.1f 秒") % [
 		result.get("score", 0), result.get("health", 0),
 		result.get("max_health", 100), result.get("elapsed_seconds", 0.0),
 	]
 	if result.has("audit"):
-		%Summary.text+="\n累计排放 %.2f kg CO₂ · 已固定 %.2f kg"%[result.audit.gross_kg,result.audit.stored_kg]
+		%Summary.text+=GameText.t("\n累计排放 %.2f kg CO₂ · 已固定 %.2f kg")%[result.audit.gross_kg,result.audit.stored_kg]
 	%CheckpointButton.visible = not won
-	%CheckpointButton.text = "从%s检查点继续" % result.get("checkpoint", "孤木")
+	%CheckpointButton.text = GameText.t("从%s检查点继续") % GameText.t(result.get("checkpoint", GameText.t("孤木")))
 	%RecoveryNote.visible = not won
 	show()
 	if won:

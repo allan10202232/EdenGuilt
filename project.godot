@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+GameText="*res://autoload/game_text.gd"
 GameSession="*res://autoload/game_session.gd"
 SoundManager="*res://autoload/sound_manager.gd"
 WorldProgress="*res://autoload/world_progress.gd"

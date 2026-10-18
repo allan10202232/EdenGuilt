@@ -1,4 +1,5 @@
 extends Control
+signal start_requested
 
 
 func _ready() -> void:
@@ -17,7 +18,7 @@ func focus_default() -> void:
 
 func _start() -> void:
 	SoundManager.play_sfx(&"ui_confirm")
-	GameSession.start_run()
+	start_requested.emit()
 
 
 func _toggle_sound() -> void:
@@ -26,4 +27,4 @@ func _toggle_sound() -> void:
 
 
 func _update_sound(muted: bool) -> void:
-	%MuteButton.text = "声音：关闭" if muted else "声音：开启"
+	%MuteButton.text = GameText.t("声音：关闭") if muted else GameText.t("声音：开启")
