@@ -17,6 +17,7 @@ func _ready() -> void:
 
 func _run() -> void:
 	_app = preload("res://scenes/main.tscn").instantiate()
+	_app.campaign_mode = false
 	add_child(_app)
 	GameSession.run_finished.connect(func(_result: Dictionary) -> void: _finished_count += 1)
 	await _frames(3)
@@ -30,7 +31,7 @@ func _run() -> void:
 		return
 	_check(_app.get_node("LevelRoot").get_child_count() == 1, "exactly one level instance")
 	_check(_hud().visible and not _menu().visible, "HUD shown in gameplay")
-	_check(WorldProgress.current_scene == &"lone_tree" and WorldProgress.checkpoint_name() == "孤木", "initial scene checkpoint")
+	_check(WorldProgress.current_scene == &"lone_tree" and WorldProgress.checkpoint_name() == "森林", "initial scene checkpoint")
 	_check(not WorldProgress.has_ability(&"double_jump") and not WorldProgress.has_ability(&"light_blade"), "abilities start unavailable")
 	await _physics_frames(24)
 	_check(_player().is_on_floor(), "placeholder actor lands on floor")
@@ -66,6 +67,7 @@ func _run() -> void:
 	await _teleport(Vector2(680, 596))
 	await _action(&"eden_move_right")
 	await _world_click(Vector2(700, 450))
+	await _physics_frames(8)
 	_check(WorldProgress.is_enemy_defeated(&"lone_tree/mob_0"), "one mouse slash defeats placeholder mob")
 	_check(not WorldProgress.mark_enemy_defeated(&"lone_tree/mob_0"), "same mob cannot be defeated twice")
 	await _teleport(Vector2(380, 470))
@@ -96,7 +98,7 @@ func _run() -> void:
 	WorldProgress.scene_requested.connect(_test_transition_guard, CONNECT_ONE_SHOT)
 	await _teleport(Vector2(2530, 575))
 	_check(WorldProgress.current_scene == &"grassland", "right exit changes to grassland")
-	_check(WorldProgress.checkpoint_name() == "草原" and _level().region_id == &"grassland", "scene entry updates checkpoint and scene together")
+	_check(WorldProgress.checkpoint_name() == "垃圾场" and _level().region_id == &"grassland", "scene entry updates checkpoint and scene together")
 	_check(GameSession.score == 250 and GameSession.health == 100, "scene change preserves stat source data")
 	_check(_app.get_node("LevelRoot").get_child_count() == 1, "scene replacement leaves exactly one active level")
 	_check(not WorldProgress.return_ability(&"double_jump") and WorldProgress.has_ability(&"double_jump"), "ability cannot be returned in another region")
@@ -109,7 +111,7 @@ func _run() -> void:
 	_check(WorldProgress.current_scene == &"grassland" and _player().position.x < 130.0, "death restores latest scene entry position")
 	_check(WorldProgress.has_ability(&"dash") and WorldProgress.is_enemy_defeated(&"lone_tree/mob_0"), "death retains acquired abilities and defeated history")
 	await _teleport(Vector2(2530, 575))
-	_check(WorldProgress.current_scene == &"remnant_sea" and WorldProgress.checkpoint_name() == "残海", "second exit updates checkpoint to remnant sea")
+	_check(WorldProgress.current_scene == &"remnant_sea" and WorldProgress.checkpoint_name() == "矿厂", "second exit updates checkpoint to remnant sea")
 	await _at_source(&"eden_absorb")
 	_check(WorldProgress.has_ability(&"shield"), "remnant sea absorbs shield")
 	Input.action_press(&"eden_shield")
@@ -137,6 +139,7 @@ func _run() -> void:
 	await _teleport(Vector2(680, 596))
 	await _action(&"eden_move_right")
 	await _world_click(Vector2(700, 450))
+	await _physics_frames(8)
 	_check(not WorldProgress.is_enemy_defeated(&"remnant_sea/mob_0"), "returned blade no longer defeats mobs on mouse click")
 	await _capture("05-return-route")
 	GameSession.player_died()

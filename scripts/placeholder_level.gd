@@ -13,7 +13,7 @@ const HAZARDS: Array[Rect2] = [Rect2(500, 598, 85, 22), Rect2(1300, 598, 85, 22)
 
 @onready var player: CharacterBody2D = $Player
 var _hazard_areas: Array[Area2D] = []
-var _mobs: Array[Area2D] = []
+var _mobs: Array[MeleeDummy] = []
 var _route_built: bool = false
 var _region_ability: StringName
 var _source_label: Label
@@ -41,7 +41,6 @@ func _ready() -> void:
 	entrance.body_entered.connect(_on_entrance_entered)
 	$GameplayBridge.bind_source(player.get_node("Stats"), true)
 	WorldProgress.world_changed.connect(_refresh_world)
-	player.slash_requested.connect(_on_slash)
 	_add_mob(Vector2(740, 596), &"mob_0")
 	_add_world_label(Vector2(60, 325), "遗庭 / %s" % AbilityCatalog.region_name(region_id), 28)
 	_add_world_label(Vector2(60, 365), "E 吸收 / R 交还 · F1 光刃接口试用（地点待定）", 16)
@@ -61,7 +60,7 @@ func _physics_process(_delta: float) -> void:
 				player.hurt(25)
 				break
 	for mob in _mobs:
-		if is_instance_valid(mob) and not mob.has_meta(&"defeated") and mob.overlaps_body(player):
+		if is_instance_valid(mob) and mob.is_alive() and mob.get_node("Hurtbox").overlaps_body(player):
 			player.hurt(25)
 	if Input.is_action_just_pressed(&"eden_trial_blade") and OS.is_debug_build():
 		WorldProgress.borrow_ability(&"light_blade")
@@ -181,25 +180,19 @@ func _install_return_route() -> void:
 func _add_mob(point: Vector2, local_id: StringName) -> void:
 	if WorldProgress.is_enemy_defeated(_entity_id(local_id)):
 		return
-	var mob := _add_area(Rect2(point - Vector2(16, 24), Vector2(32, 48)), "Mob")
+	var mob := preload("res://scenes/combat/melee_dummy.tscn").instantiate() as MeleeDummy
+	mob.name = "Mob"
+	mob.position = point
 	mob.set_meta(&"persistent_id", _entity_id(local_id))
-	var visual := Polygon2D.new()
-	visual.polygon = PackedVector2Array([Vector2(-16, -24), Vector2(16, -24), Vector2(16, 24), Vector2(-16, 24)])
-	visual.color = Color(0.66, 0.39, 0.45)
-	mob.add_child(visual)
+	mob.defeated.connect(_on_mob_defeated.bind(mob))
+	add_child(mob)
 	_mobs.append(mob)
 
 
-func _on_slash(facing: float) -> void:
-	for mob in _mobs:
-		if not is_instance_valid(mob) or mob.has_meta(&"defeated"):
-			continue
-		var distance: Vector2 = mob.position - player.position
-		if distance.x * facing >= 0.0 and absf(distance.x) < 95.0 and absf(distance.y) < 65.0:
-			if WorldProgress.mark_enemy_defeated(mob.get_meta(&"persistent_id")):
-				mob.set_meta(&"defeated", true)
-				mob.hide()
-				mob.queue_free()
+func _on_mob_defeated(mob: MeleeDummy) -> void:
+	if WorldProgress.mark_enemy_defeated(mob.get_meta(&"persistent_id")):
+		mob.hide()
+		mob.queue_free()
 
 
 func _add_world_label(point: Vector2, text: String, font_size: int) -> Label:

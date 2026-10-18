@@ -169,14 +169,23 @@ func restore_checkpoint() -> bool:
 
 
 func checkpoint_name() -> String:
-	return AbilityCatalog.region_name(_checkpoint.get("scene", &"lone_tree"))
+	return String(_checkpoint.get("label",AbilityCatalog.region_name(_checkpoint.get("scene", &"lone_tree"))))
+
+
+func set_checkpoint(id: StringName, position: Vector2, label: String) -> bool:
+	if not can_play() or _checkpoint.get("id",&"") == id:
+		return false
+	_checkpoint = {"scene": current_scene,"position": position,"id": id,"label": label}
+	set_notice("检查点已点亮：%s" % label)
+	checkpoint_changed.emit()
+	return true
 
 
 func begin_return_journey() -> void:
 	if not can_play() or returning:
 		return
 	returning = true
-	set_notice("返程开始：回到残海、草原、孤木交还能力；土地将提供新的通路。")
+	set_notice("伙伴已获救。返回矿厂、垃圾场、森林交还能力，带他们回家。")
 	world_changed.emit()
 
 

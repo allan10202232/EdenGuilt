@@ -32,7 +32,7 @@ func _update_progress() -> void:
 				status = "已交还"
 		if id == &"shield" and WorldProgress.shield_active:
 			status = "防御中"
-		labels[index].text = "%s [%s]\n%s" % [definition.name, definition.key, status]
+		labels[index].text = "%s [%s]  %s" % [definition.name, definition.key, status]
 		labels[index].modulate = Color(0.65, 0.88, 0.7) if WorldProgress.has_ability(id) else Color(0.6, 0.67, 0.65)
 	var land_names := {&"intact": "完整", &"wasted": "荒芜", &"restored": "通路已恢复"}
 	%RegionLabel.text = "%s · %s   |   土地：%s   |   检查点：%s" % [

@@ -3,8 +3,9 @@
 ## 当前范围
 
 Godot 4.7.2，入口 `scenes/main.tscn`。已根据 [能力规则原文](design-rules.md)实现：
-主菜单、三个占位地区切换、能力 HUD、世界进度、死亡/胜利结算、检查点继续、整局重开和音频事件。
-美术、角色动作和静态方块怪仅供系统验收。正式移动、战斗、敌人 AI、光刃机关与美术仍需对应负责人接入。
+主菜单、能力 HUD、世界进度、死亡/胜利结算、检查点继续、整局重开和音频事件。
+现默认启动森林、垃圾场、矿厂三个独立布局的可玩关卡，接入原画角色、生成背景/敌人、近战、巡逻/射击/Boss 与往返路线；
+详见 [三关试玩版说明](three-level-campaign.md)。原几何房保留为接口回归测试，逐帧动画、正式音频与最终平衡仍待后续完善。
 
 | 文件 | 职责 |
 | --- | --- |
@@ -15,7 +16,10 @@ Godot 4.7.2，入口 `scenes/main.tscn`。已根据 [能力规则原文](design-
 | `scripts/main.gd` | 场景映射和安全替换、UI 状态、输入映射 |
 | `scenes/ui/`、`scripts/ui/` | 可替换皮肤的菜单、HUD、结算和恢复按钮 |
 | `autoload/sound_manager.gd` | 多音效声道、BGM、独立 Music/SFX 音量及静音 |
-| `scripts/placeholder_*.gd`、对应场景 | 可整体删除的验证房和玩法适配器 |
+| `scripts/combat/`、`scenes/combat/`、`assets/combat/` | 可复用短/长近战模板、受击接口和独立测试房 |
+| `scripts/campaign/`、`scenes/campaign/` | 三关数据、碰撞地形、敌人、检查点、救援和返程 |
+| `assets/art/originals/`、`assets/art/generated/` | 原画归档与配套生成素材 |
+| `scripts/placeholder_*.gd`、对应场景 | 旧验证房；三关仍复用玩家与 Stats 适配器 |
 
 ## A 的生命与得分数据契约
 
@@ -68,7 +72,7 @@ func _ready() -> void:
 新的一局才清空它们。入口检查点和所有本局进度仅在内存中，不提供磁盘存档。
 结算后锁定终局事件，停止关卡处理并禁用背景 UI 按钮；物理回调内不直接销毁碰撞节点。
 
-三个正式关卡替换 `main.gd` 的 `level_scene` / `region_scenes`。场景出口调用
+三关在 `main.gd` 的 `CAMPAIGN_SCENES` 映射，`campaign_mode=false` 使用旧 `level_scene/region_scenes` 验收房。场景出口调用
 `WorldProgress.enter_scene(id, safe_spawn_position)`，胜利由关卡调用 `GameSession.complete_level()`。
 完整能力 API、稳定实体 ID、光刃撤离保护和试玩路线见 [能力与检查点接入说明](ability-system.md)。
 
@@ -95,4 +99,5 @@ BGM 循环由音频资源自身的 Loop 设置决定。静音/音量跨场景保
 
 运行命令见根目录 README。验收程序检测引擎错误/警告、退出码和最终检查结果，失败返回非零。
 界面截图模式使用真实渲染；音频使用 Dummy 驱动验证调用与状态，音色和最终响度请正常运行试听。
+近战模板复用、调参与动画/受击接入见 [近战模板说明](melee-templates.md)。
 正式美术、玩法平衡和与 A 的最终代码联调仍需后续负责人协作完成。

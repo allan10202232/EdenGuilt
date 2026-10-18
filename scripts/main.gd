@@ -1,5 +1,11 @@
 extends Node
 
+@export var campaign_mode: bool = true
+const CAMPAIGN_SCENES: Dictionary = {
+	&"lone_tree": preload("res://scenes/campaign/forest.tscn"),
+	&"grassland": preload("res://scenes/campaign/junkyard.tscn"),
+	&"remnant_sea": preload("res://scenes/campaign/mine.tscn"),
+}
 @export var level_scene: PackedScene = preload("res://scenes/placeholder_level.tscn")
 @export var region_scenes: Dictionary[StringName, PackedScene] = {
 	&"grassland": preload("res://scenes/grassland.tscn"),
@@ -13,7 +19,7 @@ extends Node
 
 
 func _ready() -> void:
-	_configure_input()
+	EdenInputBindings.configure()
 	GameSession.state_changed.connect(_on_state_changed)
 	WorldProgress.scene_requested.connect(_on_scene_requested)
 	_on_state_changed(GameSession.state, GameSession.state)
@@ -51,6 +57,8 @@ func _load_level() -> void:
 		return
 	_clear_level()
 	var packed: PackedScene = region_scenes.get(WorldProgress.current_scene, level_scene)
+	if campaign_mode:
+		packed = CAMPAIGN_SCENES[WorldProgress.current_scene]
 	WorldProgress.finish_scene_load()
 	_level_root.add_child(packed.instantiate())
 	var focus := get_viewport().gui_get_focus_owner()
@@ -62,29 +70,3 @@ func _clear_level() -> void:
 	for level in _level_root.get_children():
 		_level_root.remove_child(level)
 		level.queue_free()
-
-
-func _configure_input() -> void:
-	var bindings := {
-		&"eden_move_left": [KEY_A, KEY_LEFT],
-		&"eden_move_right": [KEY_D, KEY_RIGHT],
-		&"eden_jump": [KEY_SPACE],
-		&"eden_run": [KEY_SHIFT],
-		&"eden_shield": [KEY_Q],
-		&"eden_absorb": [KEY_E],
-		&"eden_return": [KEY_R],
-		&"eden_trial_blade": [KEY_F1],
-	}
-	for action: StringName in bindings:
-		if InputMap.has_action(action):
-			continue
-		InputMap.add_action(action)
-		for key: int in bindings[action]:
-			var event := InputEventKey.new()
-			event.physical_keycode = key
-			InputMap.action_add_event(action, event)
-	if not InputMap.has_action(&"eden_slash"):
-		InputMap.add_action(&"eden_slash")
-		var click := InputEventMouseButton.new()
-		click.button_index = MOUSE_BUTTON_LEFT
-		InputMap.action_add_event(&"eden_slash", click)

@@ -4,6 +4,9 @@ extends Control
 func _ready() -> void:
 	%StartButton.pressed.connect(_start)
 	%MuteButton.pressed.connect(_toggle_sound)
+	%CombatDemoButton.pressed.connect(func() -> void:
+		get_tree().change_scene_to_file("res://scenes/combat/melee_demo.tscn")
+	)
 	SoundManager.mute_changed.connect(_update_sound)
 	_update_sound(SoundManager.muted)
 

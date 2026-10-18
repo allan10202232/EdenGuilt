@@ -1,10 +1,13 @@
 # 能力、世界状态与检查点
 
+> 根工程默认进入森林、垃圾场、矿厂三关，试玩流程见 [三关说明](three-level-campaign.md)。
+> 下文保留稳定地区 ID 与原设计语义；显示名映射为森林/垃圾场/矿厂，旧几何验收房保留。
+
 ## 依据与职责
 
 需求原文：[Rules and Ability](design-rules.md)。这是项目设计资料。
 B 负责状态、数据契约、UI 和声音接入；A 负责最终移动、跳跃、冲刺、防御、命中判定和敌人 AI。
-当前 `placeholder_player.gd` 与静态方块怪为可删除的验证适配器，不是最终战斗实现。
+当前三关仍复用 `placeholder_player.gd` 玩家适配器，使用 `MeleeCombat` 近战模板和 `CampaignEnemy` 敌人；旧几何房中的静态方块怪仅供回归验收。
 
 | 规则 | B 提供的系统支持 |
 | --- | --- |
@@ -109,6 +112,7 @@ if WorldProgress.collect_once(&"lone_tree/shard_01"):
 ## 输入与占位数值
 
 用户确认：Q 按住护盾、E 吸收、R 交还。其余按文档为 A/D 移动、空格跳、Shift 快跑、鼠标左键挥刃。
+近战模板现提供左键短砍和右键长砍，均要求持有光刃，接入方式见 [近战模板说明](melee-templates.md)。
 InputMap 使用 `eden_*` 前缀，已存在的映射不会被覆盖。点击 HUD 按钮不会同时挥刃。
 Shift 在未借冲刺时仍支持文档中的普通快跑，借到冲刺后按下会触发短距离冲刺。
 

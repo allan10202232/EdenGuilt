@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="MeleeAttackProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/melee_attack_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"reach_melee"
+display_name = "长距离挥砍"
+reach = 180.0
+height = 42.0
+forward_offset = 14.0
+damage = 1
+knockback = Vector2(300, -50)
+windup = 0.18
+active_time = 0.14
+recovery = 0.30
+cooldown = 0.30
+color = Color(0.45, 0.82, 0.95, 1)
