@@ -13,6 +13,9 @@ func _ready() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	if "--demo" in OS.get_cmdline_user_args():
+		await _run_demo()
+		return
 	check(not OS.has_feature("editor"), "running the native exported runtime")
 	check(not ResourceLoader.exists("res://tests/startup_test.gd"), "development tests are excluded")
 	check(not ResourceLoader.exists("res://demo_capture/eden.gd"), "demo recording helpers are excluded")
@@ -83,6 +86,30 @@ func _run() -> void:
 	await ticks(6)
 	check(GameText.t("开始游戏") != "开始游戏", "English localization is available offline")
 	await capture("08-menu-english")
+	SoundManager.stop_sfx()
+	await ticks(8)
+	finish()
+
+func _run_demo() -> void:
+	await ticks(24)
+	app = get_tree().current_scene
+	check(not OS.has_feature("editor"), "demo runs the native exported runtime")
+	check(app.scene_file_path == "res://scenes/main.tscn", "demo flag skips the illustrated prologue")
+	if app.get_node_or_null("LevelRoot") == null:
+		finish()
+		return
+	check(app.demo_shortcuts != null, "packaged demo enables chapter shortcuts")
+	if app.demo_shortcuts == null:
+		finish()
+		return
+	var regions: Array[StringName] = [&"lone_tree", &"grassland", &"remnant_sea"]
+	for index in [1, 2, 0]:
+		check(app.demo_shortcuts.jump_to(index), "packaged demo accepts chapter jump %d" % (index + 1))
+		await ticks(45)
+		check(WorldProgress.current_scene == regions[index], "packaged demo reaches chapter %d" % (index + 1))
+		check(is_instance_valid(hero()) and hero()._art.sprite.texture != null, "chapter jump restores the playable character")
+	GameSession.return_to_menu()
+	await ticks(8)
 	SoundManager.stop_sfx()
 	await ticks(8)
 	finish()

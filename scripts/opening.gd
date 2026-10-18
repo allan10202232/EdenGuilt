@@ -12,6 +12,10 @@ func _ready() -> void:
 	if "--export-smoke-test" in OS.get_cmdline_user_args():
 		var verifier := preload("res://scripts/distribution/export_smoke.gd").new()
 		get_tree().root.add_child.call_deferred(verifier)
+	# Release templates reject external scene overrides. Use the normal entry's
+	# explicit demo flag instead, so packaged presentations can skip the prologue.
+	if "--demo" in OS.get_cmdline_user_args():
+		_start_game()
 
 
 func _start_game() -> void:

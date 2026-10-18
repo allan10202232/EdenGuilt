@@ -64,6 +64,11 @@ def build_environment():
     # Keep local Windows validation data in the ignored build directory.
     if sys.platform == "win32":
         env["APPDATA"] = str(CACHE / "user")
+        env["LOCALAPPDATA"] = str(ROOT / "builds/local-user")
+        env["TEMP"] = str(ROOT / "builds/temp")
+        env["TMP"] = env["TEMP"]
+        for key in ["APPDATA", "LOCALAPPDATA", "TEMP"]:
+            Path(env[key]).mkdir(parents=True, exist_ok=True)
     return env
 
 
@@ -108,12 +113,15 @@ def install(target, supplied_engine=None):
     print(f"Godot {VERSION}; export templates: {destination}")
 
 
-def checked_run(command, name, summary=None, timeout=180):
+def checked_run(command, name, summary=None, timeout=180, cwd=ROOT):
     """Godot can return zero on a parser error; check its output as well."""
     LOGS.mkdir(parents=True, exist_ok=True)
     print(f"Running {name}", flush=True)
     engine_log = LOGS / f"{name}-engine.log"
-    result = subprocess.run([str(arg) for arg in [*command, "--log-file", engine_log]], cwd=ROOT, env=build_environment(),
+    command = list(command)
+    insertion = command.index("--") if "--" in command else len(command)
+    command[insertion:insertion] = ["--log-file", engine_log]
+    result = subprocess.run([str(arg) for arg in command], cwd=cwd, env=build_environment(),
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             text=True, encoding="utf-8", errors="replace", timeout=timeout)
     (LOGS / f"{name}.log").write_text(result.stdout, encoding="utf-8")
@@ -148,13 +156,12 @@ def build(target, supplied_engine=None):
         subprocess.run(["codesign", "--verify", "--deep", "--strict", str(executable)], check=True)
     else:
         game_binary = executable
-    for scene, name in [(None, "packaged-opening"), ("res://scenes/demo/presentation.tscn", "packaged-campaign")]:
-        command = [game_binary, "--headless", "--audio-driver", "Dummy", "--fixed-fps", "60", "--quit-after", "180"]
-        if scene:
-            command.append(scene)
-        checked_run(command, name)
+    checked_run([game_binary, "--headless", "--audio-driver", "Dummy", "--fixed-fps", "60", "--quit-after", "180"],
+                "packaged-opening", cwd=output)
     checked_run([game_binary, "--headless", "--audio-driver", "Dummy", "--fixed-fps", "60",
-                 "--", "--export-smoke-test"], "packaged-three-chapters", "STANDALONE EXPORT")
+                 "--", "--export-smoke-test"], "packaged-three-chapters", "STANDALONE EXPORT", cwd=output)
+    checked_run([game_binary, "--headless", "--audio-driver", "Dummy", "--fixed-fps", "60",
+                 "--", "--demo", "--export-smoke-test"], "packaged-demo", "STANDALONE EXPORT", cwd=output)
     metadata = {"commit": os.environ.get("GITHUB_SHA", subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()),
                 "godot": version, "platform": target, "architecture": "x86_64" if target == "windows" else "universal (x86_64 + arm64)"}
     (output / "BUILDINFO.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
@@ -162,10 +169,10 @@ def build(target, supplied_engine=None):
     for license_name in ["GODOT-LICENSE.txt", "GODOT-THIRD-PARTY.txt"]:
         shutil.copy2(ROOT / "docs/distribution" / license_name, output / license_name)
     if target == "windows":
-        (output / "Demo Mode.cmd").write_bytes(b'@echo off\r\ncd /d "%~dp0"\r\nstart "" "EdenGuilt.exe" res://scenes/demo/presentation.tscn -- --demo\r\n')
+        (output / "Demo Mode.cmd").write_bytes(b'@echo off\r\ncd /d "%~dp0"\r\nstart "" "EdenGuilt.exe" -- --demo\r\n')
     else:
         launcher = output / "Demo Mode.command"
-        launcher.write_text('#!/bin/sh\ncd "$(dirname "$0")" || exit 1\nexec ./EdenGuilt.app/Contents/MacOS/' + binary_name + ' res://scenes/demo/presentation.tscn -- --demo\n', encoding="utf-8")
+        launcher.write_text('#!/bin/sh\ncd "$(dirname "$0")" || exit 1\nexec ./EdenGuilt.app/Contents/MacOS/' + binary_name + ' -- --demo\n', encoding="utf-8")
         launcher.chmod(0o755)
     DIST.mkdir(parents=True, exist_ok=True)
     archive = DIST / NAMES[target]

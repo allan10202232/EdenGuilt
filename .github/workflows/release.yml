@@ -32,7 +32,9 @@ jobs:
           persist-credentials: false
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          path: builds/godot
+          path: |
+            builds/godot/editor
+            builds/godot/templates
           key: godot-${{ runner.os }}-${{ env.GODOT_VERSION }}-${{ hashFiles('ci/desktop_release.py') }}
       - name: Install matching Godot editor and export templates
         run: python ci/desktop_release.py install --target ${{ matrix.target }}
