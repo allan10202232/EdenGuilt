@@ -15,6 +15,8 @@ func _run() -> void:
 	add_child(app)
 	GameSession.start_run()
 	await _ticks(12)
+	WorldProgress.enter_scene(&"grassland",Vector2(140,596))
+	await _ticks(10)
 	_player().combat.attack_started.connect(func(_move: MeleeAttackProfile) -> void: starts+=1)
 	for sound: StringName in [&"slash_close",&"slash_reach",&"impact_light",&"impact_heavy",&"enemy_down",&"land"]:
 		_check(SoundManager.has_sound(sound) and SoundManager._streams[sound].get_length() >= 0.14,"layered audio is loaded: " + String(sound))
@@ -33,7 +35,7 @@ func _run() -> void:
 	_check(_player().grounding.has_ground and _player().grounding.ground_distance < 2,"grounded feet cast a contact shadow on real terrain")
 	await _place(Vector2(180,500))
 	_check(_player().grounding.has_ground and _player().grounding.ground_distance > 70,"airborne shadow follows the ground below the actor")
-	await _place(Vector2(2530,600))
+	await _place(Vector2(1330,600))
 	_check(not _player().grounding.has_ground,"shadow disappears over a floorless gap")
 	await _place(Vector2(180,596))
 	var before := starts

@@ -17,6 +17,8 @@ func _run() -> void:
 	await _ticks(4)
 	GameSession.start_run()
 	await _ticks(25)
+	WorldProgress.enter_scene(&"grassland",Vector2(140,596))
+	await _ticks(10)
 	var level: CampaignLevel = app.get_node("LevelRoot").get_child(0)
 	var player: CharacterBody2D = level.player
 	for other: CampaignEnemy in level.enemies:

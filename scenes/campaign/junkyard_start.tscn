@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://scripts/campaign/level.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/parkour/scrapyard_level.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/placeholder_player.tscn" id="2"]
 [ext_resource type="Script" path="res://scripts/integration/gameplay_bridge.gd" id="3"]
 
@@ -10,6 +10,15 @@ region_id = &"lone_tree"
 
 [node name="Player" parent="." instance=ExtResource("2")]
 campaign_character = true
+move_speed = 260.0
+gravity = 980.0
+jump_velocity = -420.0
+double_jump_velocity = -380.0
+coyote_time = 0.12
+jump_buffer_time = 0.12
+air_boost_multiplier = 1.15
+allow_sprint = false
+variable_jump = false
 
 [node name="GameplayBridge" type="Node" parent="."]
 script = ExtResource("3")

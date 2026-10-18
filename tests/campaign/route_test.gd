@@ -17,17 +17,14 @@ func _run() -> void:
 	await _tick(4)
 	GameSession.start_run()
 	await _tick(30)
-	await _walk(420)
+	await _walk(230)
 	await _action(&"eden_absorb")
-	await _walk(870)
-	await _leap(1280)
-	await _walk(1740)
-	await _leap(2010)
-	await _walk(2340)
-	await _leap(2820)
-	await _walk(3010)
-	await _leap(3240)
-	await _walk(3750)
+	var scrapyard := preload("res://tests/helpers/scrapyard_route.gd").new()
+	scrapyard.app = app
+	scrapyard.report = _check
+	add_child(scrapyard)
+	await scrapyard.run(false)
+	scrapyard.queue_free()
 	await _tick(8)
 	_check(WorldProgress.current_scene==&"grassland","walked junkyard exit into mine")
 	if failures:
@@ -97,13 +94,7 @@ func _run() -> void:
 	if failures:
 		await _finish()
 		return
-	await _walk(2760)
-	await _leap(2300)
-	await _walk(1740)
-	await _leap(1540)
-	await _walk(1260)
-	await _leap(850)
-	await _walk(420)
+	await _walk(230)
 	await _action(&"eden_return")
 	await _walk(36)
 	await _tick(8)
@@ -143,7 +134,7 @@ func _walk(target: float) -> void:
 	var action:=&"eden_move_right" if direction>0 else &"eden_move_left"
 	Input.action_press(action)
 	Input.action_press(&"eden_run")
-	for index in 800:
+	for index in 2400:
 		if WorldProgress.current_scene!=region or GameSession.state!=GameSession.State.PLAYING or WorldProgress.narrative_active: break
 		if direction*(target-_player().position.x)<5: break
 		await _tick(1)

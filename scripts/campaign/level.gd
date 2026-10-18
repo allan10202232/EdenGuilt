@@ -122,7 +122,7 @@ func _ready() -> void:
 		_label(node.point+Vector2(-55,-80),GameText.t("%s · C 固化毒雾")%[["I","II","III"][index]],14,Color(0.7,0.9,0.48))
 	if region_id==&"lone_tree":
 		_label(Vector2(80,535),GameText.t("A/D 移动 · 空格跳跃\n灯火：检查点"),13)
-	var exit_label:=_label(exit_point+Vector2(-110,-115),GameText.t("真相档案 →") if region_id==&"remnant_sea" else GameText.t("下一关 →"),17)
+	var exit_label:=_label(exit_point+Vector2(-110,-115),GameText.t("真相档案 →") if region_id==&"remnant_sea" else "EXIT →" if region_id==&"lone_tree" else GameText.t("下一关 →"),17)
 	if region_id==&"remnant_sea":
 		exit_label.name="RescueLabel"
 	WorldProgress.world_changed.connect(_refresh_world)
@@ -221,7 +221,7 @@ func _on_entrance(body: Node2D) -> void:
 	if index>0:
 		var previous: StringName = AbilityCatalog.REGIONS[index-1]
 		var previous_exit: Vector2 = CampaignLevels.definition(previous).exit
-		WorldProgress.enter_scene(previous,previous_exit-Vector2(90,24))
+		WorldProgress.enter_scene(previous,previous_exit-Vector2(40 if previous==&"lone_tree" else 90,24))
 	elif WorldProgress.returning and WorldProgress.required_returns_complete():
 		GameSession.complete_level()
 	else:
@@ -444,6 +444,7 @@ func _draw() -> void:
 		return
 	var camera:=get_viewport().get_camera_2d()
 	var size:=get_viewport_rect().size
+	if camera!=null: size /= camera.zoom
 	var origin:=camera.get_screen_center_position()-size*0.5 if camera!=null else Vector2.ZERO
 	_paint_background(origin,size)
 	for rect: Rect2 in _platforms:

@@ -45,6 +45,16 @@ func _process(delta: float) -> void:
 
 
 func _update_progress() -> void:
+	# The first chapter uses this space for its six-section parkour status panel.
+	var parkour := WorldProgress.campaign_rules and WorldProgress.current_scene == &"lone_tree"
+	$CarbonDashboard.visible = not parkour
+	$Abilities.visible = not parkour
+	$RouteMap.visible = not parkour
+	%Notice.anchor_top = 1.0 if parkour else 0.0
+	%Notice.anchor_bottom = 1.0 if parkour else 0.0
+	%Notice.offset_left = -540 if parkour else -310
+	%Notice.offset_top = -108 if parkour else 275
+	%Notice.offset_bottom = -24 if parkour else 385
 	var labels: Array[Label] = [%DoubleJump, %Dash, %Shield, %LightBlade]
 	var ids: Array = [&"double_jump", &"mineralization", &"shield", &"black_pierce"] if WorldProgress.campaign_rules else [&"double_jump", &"dash", &"shield", &"light_blade"]
 	for index in ids.size():
@@ -68,7 +78,7 @@ func _update_progress() -> void:
 	]
 	if WorldProgress.campaign_rules:
 		$Hint.text=_campaign_objective()
-		$Hint.show()
+		$Hint.visible = not parkour
 
 
 func _campaign_objective() -> String:
@@ -86,7 +96,7 @@ func _campaign_objective() -> String:
 			return GameText.t("目标 ← 回到矿洞能力源按 R 修复并卸下碳矿化。") if WorldProgress.has_ability(&"mineralization") else GameText.t("目标 ← 矿洞已修复，从左端返回垃圾场。")
 		return GameText.t("目标 ← 回出生地能力源按 R 修复并卸下二段跳。") if WorldProgress.has_ability(&"double_jump") else GameText.t("目标 ← 四种能力已卸下，继续向左回家。")
 	if region==&"lone_tree":
-		return GameText.t("目标 → 穿过断崖前往矿洞；空格可二段跳。") if WorldProgress.has_ability(&"double_jump") else GameText.t("目标 → 靠近绿色能力源，按 E 学习二段跳。")
+		return ScrapyardLayout.text("Goal → Cross six scrapyard sections to the mine. Space twice: air jump.", "目标 → 穿过六段废料跑酷区前往矿洞，空中再按空格可二段跳。") if WorldProgress.has_ability(&"double_jump") else GameText.t("目标 → 靠近绿色能力源，按 E 学习二段跳。")
 	if region==&"grassland":
 		return GameText.t("目标 → 按 I、II、III 的顺序用 C 固化三个节点，打开净化门。") if WorldProgress.has_ability(&"mineralization") else GameText.t("目标 → 靠近矿洞能力源，按 E 学习碳矿化。")
 	if not WorldProgress.has_ability(&"shield"):

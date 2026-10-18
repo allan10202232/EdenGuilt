@@ -18,6 +18,7 @@ func _ready() -> void:
 	_filter.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_material = ShaderMaterial.new()
 	_material.shader = preload("res://assets/ecology.gdshader")
+	_material.set_shader_parameter("protect_signals", _level.region_id == &"lone_tree")
 	_filter.material = _material
 	add_child(_filter)
 	amount = target_amount()
