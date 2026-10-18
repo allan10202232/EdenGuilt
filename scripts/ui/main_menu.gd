@@ -3,9 +3,16 @@ extends Control
 const SettingsPanelScript = preload("res://scripts/ui/settings_panel.gd")
 signal start_requested
 var _settings: SettingsPanelScript
+var _identity_sources: Dictionary = {}
 
 
 func _ready() -> void:
+	for child in $Margin/Columns/Identity.get_children():
+		if child is Label:
+			_identity_sources[child] = child.text
+			child.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	GameText.language_changed.connect(_refresh_identity)
+	_refresh_identity()
 	_settings = SettingsPanelScript.new()
 	add_child(_settings)
 	var settings_button := Button.new()
@@ -26,6 +33,12 @@ func _ready() -> void:
 	)
 	SoundManager.mute_changed.connect(_update_sound)
 	_update_sound(SoundManager.muted)
+
+
+func _refresh_identity() -> void:
+	# Always translate the original copy so repeated locale switches stay in sync.
+	for label: Label in _identity_sources:
+		label.text = GameText.t(_identity_sources[label])
 
 
 func focus_default() -> void:

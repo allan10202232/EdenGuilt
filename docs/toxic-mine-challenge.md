@@ -9,7 +9,8 @@ assets or external downloads are required.
 ## Controls
 
 - A/D or arrows: move, 260 px/s. Space: jump; press again in midair for Double Jump.
-- E or J: 260 px mineralization pulse, 0.6 s cooldown. C remains a compatibility alias.
+- E at the entrance's glowing ore seam: a 2.4 s extraction animation unlocks mineralization. It is no longer granted automatically.
+- E or J after extraction: 260 px mineralization pulse, 0.6 s cooldown. C remains a compatibility alias.
 - Push the crate by walking into it. T or left mouse button operates the lever.
 - T near the entrance resident starts subtitles; T advances each line.
 - Esc: settings, controls, language and sound. R at the entrance restores the mine
@@ -44,17 +45,39 @@ four main cliff tiers. The bridge has a 0.45 s shake telegraph per segment, with
 therefore stays behind a player moving at 260 px/s rather than making the span
 mathematically impossible.
 
-Acid begins at Y=2050. Death returns the player to the current safe deck after
-0.2 s, clears transient platforms and resets the bridge. Stage progress, valves,
+Acid begins at Y=2050. A fall deducts one full life vessel (20 HP) from the
+current health. If any health remains, the player returns to the safe deck after
+0.2 s without healing, clearing transient platforms and resetting the bridge. Stage progress, valves,
 lever state and captured-carbon totals survive checkpoint reloads. A new run
 clears them. Checkpoint triggers must be reached in order; the bridge checkpoint
 also requires the lever to be active.
 
-The mine's dedicated HUD shows the same five green life vessels as the campaign.
-Entry preserves the previous chapter's health; each 10 HP gas hit removes half a
-vessel immediately. Lethal acid empties them without opening global Game Over,
-then the short checkpoint retry restores all five. The homeward exit derives
-its destination from the current Junkyard exit, including the six-section layout.
+The main gas lever now latches after opening: repeated T or melee clicks cannot
+shut off the cliff route. Walking off the upper balcony can bypass the drop
+hatch and its stage-6 trigger. If a player who has reached stage 5 or 6 physically
+enters the stage-7 cliff ledge, its backup supply restores the gas and records
+the crossed bridge checkpoint before enabling stage 7. Remote stage-skip calls
+remain rejected. The return trip keeps the gas off.
+
+`试玩第二关供气修复.cmd` / `scenes/mine_challenge/play_cliff_check.tscn`
+previews the reported ledge with the stale stage-5 state, exercising the real
+recovery instead of directly enabling its gas.
+
+All three chapters now share the mine-style `ChapterStatusHUD`: five green life
+vessels, stage, double-jump availability, skill cooldown, gross emissions and
+stored carbon. Entry preserves the previous chapter's health; each 10 HP gas
+hit removes half a vessel. Checkpoints and automatic fall retries do not heal.
+Reaching zero from damage or falls opens Game Over. Only a deliberate continue
+or a new run restores health. The homeward exit derives its destination from
+the current Junkyard exit, including the six-section layout.
+
+The entrance life source is a damp ore seam at X=420, built from the mine's
+existing rock/ore atlas with pale blue-green lichen veins rather than garden
+grass and water. Extraction reuses the original six-frame device/kneeling
+animation and energy flow. Its light fades gradually; only completion unlocks
+the pulse. Movement, hazards and game time pause during the action. Repeated
+interaction cannot grant the skill twice; depletion persists across retries and
+revisits. The A return restores the seam while returning mineralization.
 
 ## Reusable prefabs
 
@@ -71,6 +94,8 @@ All six scenes are under `scenes/mine_challenge/`, with their implementations in
 `player.gd` owns movement, coyote/buffer, pulse timing, toxic slowdown, jumping and
 resonance. `level.gd` builds the layout and HUD, connects components and persists
 chapter progress in `WorldProgress.mine_challenge`.
+`life_seam.gd` provides the mine-specific source artwork and text;
+`LandExtraction` provides the shared action and completion/cancellation rules.
 
 ## Carbon accounting
 
@@ -93,6 +118,12 @@ platform expiry/recasting, resonance, jump grace/buffering, acid recovery and ga
 `tests/mine_challenge_test.tscn` traverses all eight stages with ordinary input,
 then tests Eden City handoff and physically walks the mine's A return route.
 Both are included in `tests/run-tests.ps1`.
+
+`tests/mine_supply_recovery_test.tscn` adds 16 regression checks for the exact
+stage-5 HUD / stage-7 ledge mismatch, visible gas, repeat lever interaction,
+mineralization, falls, Game Over continue, return safety and new-run reset. It
+also saves `test-output/screenshots/mine-cliff-supply-recovered.png` with
+`--screenshots` for actual rendering inspection.
 
 Older actor/oasis tests explicitly use `tests/fixtures/legacy_mineralization_room.tscn`.
 That fixture is not the production level; it preserves coverage of the original

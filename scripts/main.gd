@@ -4,9 +4,10 @@ extends Node
 const CAMPAIGN_SCENES: Dictionary = {
 	&"lone_tree": preload("res://scenes/campaign/junkyard_start.tscn"),
 	&"grassland": preload("res://scenes/campaign/toxic_mine.tscn"),
-	&"remnant_sea": preload("res://scenes/campaign/eden_city.tscn"),
+	&"remnant_sea": preload("res://scenes/eden/eden_chapter.tscn"),
 }
 @export var mine_scene: PackedScene = preload("res://scenes/campaign/toxic_mine.tscn")
+@export var eden_scene: PackedScene = preload("res://scenes/eden/eden_chapter.tscn")
 @export var level_scene: PackedScene = preload("res://scenes/placeholder_level.tscn")
 @export var region_scenes: Dictionary[StringName, PackedScene] = {
 	&"grassland": preload("res://scenes/grassland.tscn"),
@@ -61,6 +62,8 @@ func _ready() -> void:
 func _on_state_changed(_previous: int, current: int) -> void:
 	_menu.visible = current == GameSession.State.MAIN_MENU
 	_hud.visible = current != GameSession.State.MAIN_MENU
+	if _level_root.get_child_count()>0 and _level_root.get_child(0).get_meta(&"custom_hud",false):
+		_hud.hide()
 	_hud.set_interactive(current == GameSession.State.PLAYING)
 	_result.hide()
 	_truth.hide()
@@ -100,6 +103,7 @@ func _load_level() -> void:
 	var packed: PackedScene = region_scenes.get(WorldProgress.current_scene, level_scene)
 	if campaign_mode:
 		packed = mine_scene if WorldProgress.current_scene==&"grassland" else CAMPAIGN_SCENES[WorldProgress.current_scene]
+		if WorldProgress.current_scene==&"remnant_sea": packed=eden_scene
 	WorldProgress.finish_scene_load()
 	var active_level := packed.instantiate()
 	_level_root.add_child(active_level)

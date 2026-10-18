@@ -13,6 +13,8 @@ func _ready() -> void:
 func _run() -> void:
 	GameText.set_language("zh_CN",false)
 	app = preload("res://scenes/main.tscn").instantiate()
+	# Historical horizontal Eden fixture; production four-floor Eden has its own route suite.
+	app.eden_scene=preload("res://tests/fixtures/legacy_eden_room.tscn")
 	# Isolate enemy animation against the campaign combat controller; production
 	# mine parkour uses its own player and is exercised by mine_challenge_test.
 	app.mine_scene=preload("res://tests/fixtures/legacy_mineralization_room.tscn")

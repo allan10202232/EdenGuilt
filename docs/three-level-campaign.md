@@ -1,5 +1,7 @@
 # 三关动作探索试玩版
 
+> 下文保留早期横向关卡与控制器的记录。当前生产关卡已升级为 [六段垃圾场](scrapyard-parkour.md)、[八段毒雾矿坑](toxic-mine-challenge.md) 和 [四层 EDEN](eden-four-floors.md)，具体布局、操作和测试以这些说明为准。
+
 在 Godot 导入根目录 `project.godot`，F5 开始。`prototype/` 保留此前 main 的独立原型。
 新版路线、碳账本、计算口径和双结局见 [碳系统说明](carbon-system.md)。
 

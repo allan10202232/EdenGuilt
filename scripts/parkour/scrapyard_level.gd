@@ -14,6 +14,7 @@ var _respawn_guard := 0.0
 var _rescue_path := false
 var _rescue_shape := PackedVector2Array()
 var parkour_hud: ParkourHUD
+var toxic_water: ScrapyardToxicWater
 
 func _add_region_signs() -> void:
 	# Section information lives in the HUD; keep the oasis and landing space clear.
@@ -21,6 +22,8 @@ func _add_region_signs() -> void:
 
 func _ready() -> void:
 	super._ready()
+	toxic_water = ScrapyardToxicWater.new()
+	add_child(toxic_water)
 	player.death_height = 900
 	player.lethal_handler = respawn_player
 	if player.position.x < 360 and player.position.y > 500:
@@ -81,9 +84,7 @@ func _ready() -> void:
 	_exit_area.get_child(0).shape.size = Vector2(100,130)
 	_label(Vector2(4660,125),ScrapyardLayout.text("↑ UPPER ROUTE", "↑ 高处路线"),17,Color("9eefd1"))
 	_label(Vector2(6580,605),ScrapyardLayout.text("DELAY YOUR AIR JUMP", "延迟二段跳 · 等待回收"),15,Color("ffb38d"))
-	parkour_hud = ParkourHUD.new()
-	parkour_hud.level = self
-	add_child(parkour_hud)
+	# The shared campaign HUD now renders the same mine-style panel in all chapters.
 	current_section = ScrapyardLayout.section_at(player.position.x)
 	WorldProgress.set_checkpoint(StringName("lone_tree/parkour_%d" % current_section), ScrapyardLayout.SECTIONS[current_section].spawn, "Scrapyard · %d / 6" % (current_section + 1))
 	if WorldProgress.returning: _build_rescue_path()
@@ -108,8 +109,7 @@ func _physics_process(delta: float) -> void:
 func _on_checkpoint(body: Node2D, point: Vector2, index: int) -> void:
 	if body != player or not WorldProgress.can_play(): return
 	current_section = index
-	if WorldProgress.set_checkpoint(StringName("lone_tree/parkour_%d" % index), point, "Scrapyard · %d / 6" % (index + 1)):
-		player.stats.heal(player.stats.max_health)
+	WorldProgress.set_checkpoint(StringName("lone_tree/parkour_%d" % index), point, "Scrapyard · %d / 6" % (index + 1))
 
 func _on_exit(body: Node2D) -> void:
 	# Returning from the mine spawns on this island; do not bounce into it again.
@@ -120,7 +120,10 @@ func respawn_player(_reason: StringName = &"toxic_drop") -> void:
 	if not WorldProgress.can_play() or _respawn_guard > 0.0: return
 	_respawn_guard = 0.18
 	WorldProgress.scrapyard_deaths += 1
-	# No scene reload, no GAME_OVER state and no rollback of ability/carbon history.
+	var survived:=GameSession.apply_fall_penalty()
+	player.stats.restore_stats(GameSession.stats_snapshot())
+	if not survived: return
+	# Surviving a fall preserves ability/carbon history and the remaining health.
 	WorldProgress.restore_checkpoint()
 	player.reset_at_checkpoint(WorldProgress.spawn_position)
 	player.get_node("Camera2D").reset_smoothing()
@@ -152,12 +155,6 @@ func _paint_platform(rect: Rect2, _restored: bool = false) -> void:
 func _draw() -> void:
 	super._draw()
 	if definition.is_empty(): return
-	# The acidic bottom is one continuous lethal boundary: Y > 900.
-	draw_rect(Rect2(0,900,9600,120),Color("315e2e"))
-	for x in range(0,9600,20):
-		var y := 900 + sin(_clock*2.5 + x*0.03)*4
-		draw_rect(Rect2(x,y,20,12),Color("a0e644"))
-		draw_rect(Rect2(x+7,y+18+sin(x)*10,6,6),Color("64b648"))
 	for info in ScrapyardLayout.SECTIONS:
 		draw_line(Vector2(info.start,-100),Vector2(info.start,900),Color(0.6,0.8,0.7,0.08),2)
 	for index in maxi(0,_rescue_shape.size()-1):

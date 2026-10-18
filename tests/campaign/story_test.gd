@@ -10,6 +10,8 @@ func _ready() -> void:
 func _run() -> void:
 	_check(GameText.language=="en","fresh preferences default to English")
 	app=preload("res://scenes/main.tscn").instantiate()
+	# Historical horizontal Eden fixture; production four-floor Eden has its own route suite.
+	app.eden_scene=preload("res://tests/fixtures/legacy_eden_room.tscn")
 	add_child(app)
 	await _ticks(5)
 	_check(GameText.t(app._menu.get_node("%StartButton").text)=="Start game","main menu renders English")
@@ -79,7 +81,9 @@ func _run() -> void:
 	_check(not WorldProgress.extraction_active and WorldProgress.narrative_kind==&"" and CarbonLedger.gross_kg==0,"revisiting a learned source cannot replay or bill learning")
 	WorldProgress.enter_scene(&"grassland",Vector2(140,596))
 	await _ticks(10)
-	_check(_level().vents.size()==25 and WorldProgress.has_ability(&"mineralization"),"new mine loads its gas-mineralization challenge")
+	_check(_level().vents.size()==25 and not WorldProgress.has_ability(&"mineralization"),"new mine loads its gas challenge with mineralization still locked")
+	await preload("res://tests/helpers/mine_learning.gd").acquire(_level(),get_tree())
+	_check(WorldProgress.has_ability(&"mineralization"),"real mine-seam extraction grants mineralization before the story handoff")
 	_check(not app._hud.visible,"mine uses its own stage and sequestration HUD")
 	# The full input-driven eight-stage route is tested in mine_challenge_test.
 	# Here we isolate story handoff, bilingual dialogue and the chapter summary.

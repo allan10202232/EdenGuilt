@@ -10,6 +10,8 @@ func _ready() -> void:
 func run() -> void:
 	GameText.set_language("en",false)
 	app=preload("res://scenes/main.tscn").instantiate()
+	# Keep the original guard/controller regression alongside the new Eden suite.
+	app.eden_scene=preload("res://tests/fixtures/legacy_eden_room.tscn")
 	add_child(app)
 	GameSession.start_run()
 	await ticks(8)
@@ -91,6 +93,9 @@ func run() -> void:
 	await ticks(8)
 	await place(Vector2(280,1778))
 	check(keys().has("T"),"mine resident uses the same round T prompt")
+	await place(Vector2(420,1778))
+	check(keys().has("E"),"the new living mineral seam offers extraction only nearby")
+	await preload("res://tests/helpers/mine_learning.gd").acquire(level(),get_tree())
 	await place(level().lever.position+Vector2(-50,-22))
 	check(keys().has("T"),"mine lever advertises the actual T interaction")
 	await capture("04-lever")

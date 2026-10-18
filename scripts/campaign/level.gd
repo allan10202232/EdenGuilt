@@ -38,6 +38,7 @@ var _toxin_tick: float = 0.0
 var _filter_gate: StaticBody2D
 var _signs: Array[Dictionary] = []
 var interaction_hints: Node2D
+var _fall_recovery_guard:=0.0
 
 
 func _ready() -> void:
@@ -55,6 +56,7 @@ func _ready() -> void:
 	player.position = WorldProgress.spawn_position
 	player.z_index = 5
 	player.death_height = float(definition.height)+80.0
+	player.lethal_handler=_recover_fall
 	var camera: Camera2D = player.get_node("Camera2D")
 	camera.limit_right = int(definition.width)
 	camera.limit_bottom = int(definition.height)
@@ -173,6 +175,7 @@ func _build_interaction_hints() -> void:
 		,145)
 
 func _process(delta: float) -> void:
+	_fall_recovery_guard=maxf(0.0,_fall_recovery_guard-delta)
 	# Camera movement and resizing must redraw the panorama even during dialogue.
 	queue_redraw()
 	_source_label.visible=WorldProgress.can_play() and player.position.distance_to(definition.source)<108 and (WorldProgress.ability_state(definition.ability)==WorldProgress.AbilityState.UNAVAILABLE or WorldProgress.core_reversed and WorldProgress.has_ability(definition.ability))
@@ -220,8 +223,19 @@ func _physics_process(_delta: float) -> void:
 
 
 func _on_checkpoint(body: Node2D,point: Vector2,index: int) -> void:
-	if body==player and WorldProgress.set_checkpoint(StringName("%s/cp_%d"%[region_id,index]),point,"%s · %02d"%[definition.title,index+1]):
-		player.stats.heal(30)
+	if body==player:
+		WorldProgress.set_checkpoint(StringName("%s/cp_%d"%[region_id,index]),point,"%s · %02d"%[definition.title,index+1])
+
+
+func _recover_fall(_reason: StringName=&"fall") -> void:
+	if _fall_recovery_guard>0 or not WorldProgress.can_play(): return
+	_fall_recovery_guard=0.25
+	var survived:=GameSession.apply_fall_penalty()
+	player.stats.restore_stats(GameSession.stats_snapshot())
+	if not survived: return
+	WorldProgress.restore_checkpoint()
+	player.reset_at_checkpoint(WorldProgress.spawn_position)
+	player.get_node("Camera2D").reset_smoothing()
 
 
 func _on_exit(body: Node2D) -> void:

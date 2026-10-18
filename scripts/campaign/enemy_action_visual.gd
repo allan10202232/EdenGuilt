@@ -21,6 +21,10 @@ var _was_grounded: bool = false
 var _base_y: float = 0.0
 var _lighting: ShaderMaterial
 var _species: String
+var charge_active := false
+var stagger_active := false
+var windup_duration := 0.0
+var _charge_time := 0.0
 
 
 func setup(enemy: CharacterBody2D) -> void:
@@ -79,6 +83,7 @@ func _process(delta: float) -> void:
 	_lighting.set_shader_parameter("flash",0.95 if _hurt_time>0.10 else 0.0)
 	if actor.impact_pause>0.0: return
 	_time += delta
+	_charge_time = _charge_time + delta if charge_active else 0.0
 	_strike_time = maxf(0.0, _strike_time - delta)
 	_hurt_time = maxf(0.0, _hurt_time - delta)
 	_landing_time = maxf(0.0, _landing_time - delta)
@@ -94,8 +99,14 @@ func _process(delta: float) -> void:
 		sprite.frame = 15 if _hurt_time > 0.09 else 16
 	elif actor._windup > 0.0:
 		pose = &"windup"
-		var duration: float = 0.75 if actor.boss else 0.55
+		var duration: float = windup_duration if windup_duration > 0 else 0.75 if actor.boss else 0.55
 		sprite.frame = 8 + clampi(int((1.0 - actor._windup / duration) * 3.0), 0, 2)
+	elif charge_active:
+		pose = &"charge"
+		sprite.frame = 11 + mini(3, int(_charge_time / 0.07))
+	elif stagger_active:
+		pose = &"stagger"
+		sprite.frame = 17
 	elif _strike_time > 0.0:
 		pose = &"strike"
 		sprite.frame = 11 + clampi(int((0.34 - _strike_time) / 0.085), 0, 3)
@@ -116,6 +127,7 @@ func _process(delta: float) -> void:
 		sprite.frame = 6 + int(_time * 2.4) % 2
 	if _hurt_time > 0.1:
 		sprite.modulate = Color(1.5, 1.35, 1.12)
+	sprite.rotation = move_toward(sprite.rotation, actor._direction * 0.06 if charge_active else 0.0, delta * 1.5)
 	if grounded:
 		var sole: int = FEET[_species][sprite.frame]
 		sprite.position.y = roundf((44.0 if actor.boss else 20.0) - (sole-128)*sprite.scale.y)

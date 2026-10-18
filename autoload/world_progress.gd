@@ -40,6 +40,7 @@ var _collected: Dictionary = {}
 var _checkpoint: Dictionary = {}
 var _light_blade_escape_ready: bool = false
 var mine_challenge: Dictionary = {}
+var eden_chapter: Dictionary = {}
 
 
 func _ready() -> void:
@@ -67,6 +68,7 @@ func reset_run() -> void:
 	_collected.clear()
 	_light_blade_escape_ready = false
 	mine_challenge.clear()
+	eden_chapter.clear()
 	for id in AbilityCatalog.IDS:
 		_abilities[id] = AbilityState.UNAVAILABLE
 	for region in AbilityCatalog.REGIONS:
@@ -257,6 +259,8 @@ func can_play() -> bool:
 func reveal_truth() -> bool:
 	if not can_play() or truth_revealed or current_scene!=&"remnant_sea":
 		return false
+	if eden_chapter.get("active",false) and not eden_chapter.get("dismantled",false):
+		return false
 	truth_revealed = true
 	narrative_active = true
 	narrative_kind = &"truth"
@@ -274,7 +278,7 @@ func choose_ending(choice: StringName) -> bool:
 	if choice==&"A":
 		core_reversed = true
 		returning = true
-		CarbonLedger.rescued_people = 3
+		CarbonLedger.rescued_people = eden_chapter.get("rescued",[]).size() if eden_chapter.get("active",false) else 3
 		set_notice(GameText.t("逆向循环核心已启动。档案门口按 R 与 3 位居民共建通路；向左回原能力源卸下技能。"))
 		world_changed.emit()
 		CarbonLedger.changed.emit()

@@ -12,6 +12,29 @@ func _run() -> void:
 	app=preload("res://scenes/main.tscn").instantiate()
 	add_child(app)
 	await ticks(4)
+	var identity: VBoxContainer=app._menu.get_node("Margin/Columns/Identity")
+	var english_copy: Dictionary={}
+	var menu_sizes: Dictionary={}
+	var chinese:=RegEx.new()
+	chinese.compile("[\\x{4e00}-\\x{9fff}]")
+	for label in identity.get_children():
+		if not label is Label: continue
+		english_copy[label.name]=label.text
+		menu_sizes[label.name]=label.get_theme_font_size("font_size")
+		check(not label.text.is_empty() and chinese.search(label.text)==null,"English menu contains only English: "+label.name)
+	await capture("menu-english")
+	GameText.set_language("zh_CN",false)
+	await ticks(4)
+	for label in identity.get_children():
+		if not label is Label: continue
+		check(chinese.search(label.text)!=null,"menu switches to Chinese: "+label.name)
+		check(label.get_theme_font_size("font_size")==menu_sizes[label.name],"language switch keeps fixed menu size: "+label.name)
+	await capture("menu-chinese")
+	GameText.set_language("en",false)
+	await ticks(4)
+	for label in identity.get_children():
+		if not label is Label: continue
+		check(label.text==english_copy[label.name],"menu restores English after switching back: "+label.name)
 	var ui_font: SystemFont=preload("res://assets/ui_theme.tres").default_font
 	check(ui_font.font_names[0]=="Andale Mono","Andale Mono is the primary UI font")
 	check(is_equal_approx(ui_font.get_string_size("iiii",HORIZONTAL_ALIGNMENT_LEFT,-1,22).x,ui_font.get_string_size("WWWW",HORIZONTAL_ALIGNMENT_LEFT,-1,22).x),"English text keeps equal character widths")
@@ -44,7 +67,7 @@ func _run() -> void:
 	await capture("ui-clean-before")
 	hud._settings.open()
 	check(hud._settings._controls.text.contains("fixed height in Junkyard / Mine"),"settings explains the chapter-specific jump profiles")
-	check(level.parkour_hud.layer < app.get_node("UI").layer,"scrapyard status stays beneath settings and story modals")
+	check(hud.chapter_status is ChapterStatusHUD and hud._settings.z_index>hud.chapter_status.z_index,"shared status panel stays beneath settings and story modals")
 	var elapsed:=GameSession.elapsed_seconds
 	var point:=level.player.position
 	Input.action_press(&"eden_move_right")
@@ -127,4 +150,6 @@ func pixel() -> Color:
 	await get_tree().process_frame
 	RenderingServer.force_draw(false)
 	RenderingServer.force_sync()
-	return get_viewport().get_texture().get_image().get_pixel(550,330)
+	# The test patch uses canvas coordinates; screenshots use window pixels.
+	var point:=get_viewport().get_final_transform()*Vector2(550,330)
+	return get_viewport().get_texture().get_image().get_pixelv(Vector2i(point))
