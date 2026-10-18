@@ -99,7 +99,7 @@ func _run() -> void:
 	WorldProgress.scene_requested.connect(_test_transition_guard, CONNECT_ONE_SHOT)
 	await _teleport(Vector2(2530, 575))
 	_check(WorldProgress.current_scene == &"grassland", "right exit changes to grassland")
-	_check(WorldProgress.checkpoint_name() == "毒雾矿洞" and _level().region_id == &"grassland", "scene entry updates checkpoint and scene together")
+	_check(WorldProgress.checkpoint_name() == "毒雾矿坑" and _level().region_id == &"grassland", "scene entry updates checkpoint and scene together")
 	_check(GameSession.score == 250 and GameSession.health == 100, "scene change preserves stat source data")
 	_check(_app.get_node("LevelRoot").get_child_count() == 1, "scene replacement leaves exactly one active level")
 	_check(not WorldProgress.return_ability(&"double_jump") and WorldProgress.has_ability(&"double_jump"), "ability cannot be returned in another region")

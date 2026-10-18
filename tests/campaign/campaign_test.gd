@@ -78,7 +78,7 @@ func _run() -> void:
 	await _action(&"eden_recycle")
 	_check(CarbonLedger.recycled_nodes==1,"same scrap cannot be credited twice")
 	await _exit()
-	_check(_level().definition.title=="毒雾矿洞","junkyard exit enters toxic mine")
+	_check(_level().definition.title=="毒雾矿坑","junkyard exit enters toxic mine")
 	await _source(&"eden_absorb")
 	_check(WorldProgress.has_ability(&"mineralization") and not WorldProgress.has_ability(&"dash"),"mine teaches carbon mineralization instead of legacy dash")
 	await _teleport(Vector2(1150,596))

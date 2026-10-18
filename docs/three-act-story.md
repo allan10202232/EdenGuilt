@@ -5,7 +5,7 @@
 | 关卡 | 独立场景 | 主要目标 |
 | --- | --- | --- |
 | 垃圾场 / Junkyard | `scenes/campaign/junkyard_start.tscn` | 向莫斯询问道路，汇聚绿色学二段跳，越过断崖 |
-| 毒雾矿洞 / Toxic Cavern | `scenes/campaign/toxic_mine.tscn` | 听取矿工线索，学习矿化，按编号封住毒源、打开净化门 |
+| 毒雾矿坑 / Toxic Mine Pit | `scenes/campaign/toxic_mine.tscn` | 听取矿工线索，学习矿化，按编号封住毒源、打开净化门 |
 | 伊甸城 / Eden City | `scenes/campaign/eden_city.tscn` | 学盾和黑穿，击败守卫，发现真相，选择 A 返程修复或 B 留在城内 |
 
 旧内部地区 ID 和 `eden_garden.tscn` 保留兼容；新版主战役使用 `eden_city.tscn`。

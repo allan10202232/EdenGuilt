@@ -16,6 +16,8 @@ var _checkpoints: Array = []
 var _clock: float = 0.0
 var _background: Texture2D
 var _terrain: Texture2D
+var _scenery_terrain: Texture2D
+var _middle_background: Texture2D
 var _companion_texture: Texture2D
 var _companions: Array[Vector2] = []
 var _bursts: Array[Dictionary] = []
@@ -43,10 +45,14 @@ func _ready() -> void:
 	var ecology:=ShaderMaterial.new()
 	ecology.shader=preload("res://assets/ecology.gdshader")
 	material=ecology
-	_background = CampaignLevels.texture("backgrounds/"+definition.background)
+	_background = definition.get("background_texture") as Texture2D
+	if _background==null:
+		_background = CampaignLevels.texture("backgrounds/"+definition.background)
 	if _background==null:
 		_background=CampaignLevels.texture("backgrounds/forest")
 	_terrain = CampaignLevels.texture("terrain/biome_atlas")
+	_scenery_terrain=definition.get("terrain_texture") as Texture2D
+	_middle_background=definition.get("middle_background") as Texture2D
 	_companion_texture = CampaignLevels.trimmed_texture("characters/hero_green")
 	player.position = WorldProgress.spawn_position
 	player.death_height = float(definition.height)+80.0
@@ -74,6 +80,10 @@ func _ready() -> void:
 		hazard.area = definition.beams[index]
 		hazard.region_ability = definition.ability
 		hazard.offset = index*0.7
+		if _scenery_terrain!=null:
+			hazard.support_texture=_scenery_terrain
+			hazard.support_region=definition.terrain_regions[3]
+			hazard.support_depth=definition.platform_depths.y
 		add_child(hazard)
 		hazards.append(hazard)
 	for rect: Rect2 in definition.dark_walls:
@@ -140,6 +150,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# Camera movement and resizing must redraw the panorama even during dialogue.
+	queue_redraw()
 	for signpost in _signs:
 		signpost.label.visible=not WorldProgress.narrative_active and not is_instance_valid(ritual) and _clock<10.0
 	if not WorldProgress.can_play():
@@ -166,7 +178,6 @@ func _process(delta: float) -> void:
 		if temporary.life<=0.0 and is_instance_valid(temporary.body):
 			temporary.body.queue_free()
 	_temporary_platforms=_temporary_platforms.filter(func(entry: Dictionary) -> bool: return entry.life>0.0)
-	queue_redraw()
 
 
 func _physics_process(_delta: float) -> void:
@@ -233,7 +244,7 @@ func _on_entrance(body: Node2D) -> void:
 	elif WorldProgress.returning and WorldProgress.required_returns_complete():
 		GameSession.complete_level()
 	else:
-		WorldProgress.set_notice(GameText.t("向右探索垃圾场、毒雾矿洞、伊甸城。选择逆向循环后从这里回家。"))
+		WorldProgress.set_notice(GameText.t("向右探索垃圾场、毒雾矿坑、伊甸城。选择逆向循环后从这里回家。"))
 
 
 func _spawn_enemy(point: Vector2,patrol: Vector2,id: String,boss: bool=false) -> void:
@@ -455,23 +466,16 @@ func _draw() -> void:
 	var camera:=get_viewport().get_camera_2d()
 	var size:=get_viewport_rect().size
 	var origin:=camera.get_screen_center_position()-size*0.5 if camera!=null else Vector2.ZERO
-	draw_rect(Rect2(origin,size),Color(0.02,0.035,0.055))
-	if _background!=null:
-		var width:=size.y*_background.get_width()/_background.get_height()
-		var shift:=fposmod(origin.x*0.15,width)
-		for index in [-1,0,1,2]:
-			var tint:=Color(0.69,0.68,0.73) if WorldProgress.land_state(region_id)==&"wasted" else Color(0.86,0.88,0.86)
-			draw_texture_rect(_background,Rect2(origin+Vector2(index*width-shift,0),Vector2(width,size.y)),false,tint)
-		draw_rect(Rect2(origin,size),Color(0.02,0.035,0.055,0.15))
+	_paint_background(origin,size)
 	for rect: Rect2 in _platforms:
 		_paint_platform(rect)
 	for rect: Rect2 in _route_platforms:
 		_paint_platform(rect,true)
 	for rect: Rect2 in _mineral_platforms:
 		_paint_platform(rect,true)
-		draw_line(rect.position,Vector2(rect.end.x,rect.position.y),Color(0.65,0.95,1),3)
+		draw_line(rect.position,Vector2(rect.end.x,rect.position.y),_mineral_tint(),3)
 	for entry in _temporary_platforms:
-		draw_rect(entry.rect,Color(0.4,0.83,0.91,minf(0.8,entry.life)))
+		draw_rect(entry.rect,Color(_mineral_tint(),minf(0.8,entry.life)))
 	for rect: Rect2 in definition.dark_walls:
 		if not WorldProgress.repaired_regions.has(region_id):
 			draw_rect(rect,Color(0.24,0.08,0.38,0.85))
@@ -480,15 +484,23 @@ func _draw() -> void:
 	for index in definition.mineral_nodes.size():
 		var node: Dictionary=definition.mineral_nodes[index]
 		var converted:=WorldProgress.is_collected(_entity_id("mineral_%d"%index))
-		draw_circle(node.point-Vector2(0,22),20,Color(0.4,0.8,0.87,0.25) if converted else Color(0.49,0.6,0.21,0.36))
-		draw_arc(node.point-Vector2(0,22),25,0,TAU,20,Color(0.49,0.85,0.85) if converted else Color(0.7,0.77,0.28),2)
+		draw_circle(node.point-Vector2(0,22),20,Color(_mineral_tint(),0.25) if converted else Color(0.49,0.6,0.21,0.36))
+		draw_arc(node.point-Vector2(0,22),25,0,TAU,20,_mineral_tint() if converted else Color(0.7,0.77,0.28),2)
 	for index in definition.recycling.size():
 		var point: Vector2=definition.recycling[index]
 		var recycled:=WorldProgress.is_collected(_entity_id("recycle_%d"%index))
 		draw_rect(Rect2(point-Vector2(16,22),Vector2(32,32)),Color(0.17,0.38,0.28) if recycled else Color(0.42,0.35,0.22))
 		draw_arc(point-Vector2(0,6),10,0.2,TAU-0.4,12,Color(0.55,0.91,0.67),2)
 	for points: PackedVector2Array in _route_ramps:
-		if _terrain!=null:
+		if _scenery_terrain!=null:
+			var bounds:=Rect2(points[0],Vector2.ZERO)
+			for point in points: bounds=bounds.expand(point)
+			var fill: Rect2=definition.terrain_regions[1]
+			var uvs:=PackedVector2Array()
+			for point in points:
+				uvs.append((fill.position+(point-bounds.position)/bounds.size*fill.size)/_scenery_terrain.get_size())
+			draw_polygon(points,PackedColorArray([Color.WHITE]),uvs,_scenery_terrain)
+		elif _terrain!=null:
 			var bounds:=Rect2(points[0],Vector2.ZERO)
 			for point in points:
 				bounds=bounds.expand(point)
@@ -525,7 +537,10 @@ func _draw() -> void:
 		draw_rect(Rect2(3900,350,20,150),Color(0.28,0.36,0.15,0.9))
 		for index in 3:
 			draw_circle(Vector2(3910,380+index*40),6,Color(0.66,0.9,0.45) if WorldProgress.is_collected(_entity_id("mineral_%d"%index)) else Color(0.17,0.19,0.11))
-	draw_rect(Rect2(source-Vector2(28,-3),Vector2(56,20)),Color(0.2,0.27,0.26))
+	if _scenery_terrain!=null:
+		_paint_scenery_platform(Rect2(source-Vector2(28,-3),Vector2(56,20)))
+	else:
+		draw_rect(Rect2(source-Vector2(28,-3),Vector2(56,20)),Color(0.2,0.27,0.26))
 	draw_arc(source-Vector2(0,40),45.0,_clock*0.5,_clock*0.5+TAU*0.8,32,Color(definition.accent,0.45),2)
 	for point: Vector2 in _checkpoints:
 		draw_line(point+Vector2(0,24),point-Vector2(0,35),Color(0.3,0.28,0.23),7)
@@ -596,6 +611,9 @@ func _refresh_language() -> void:
 
 
 func _paint_platform(rect: Rect2,restored: bool=false) -> void:
+	if _scenery_terrain!=null:
+		_paint_scenery_platform(rect,restored)
+		return
 	if _terrain==null:
 		draw_rect(rect,Color(0.17,0.24,0.22))
 	else:
@@ -609,3 +627,90 @@ func _paint_platform(rect: Rect2,restored: bool=false) -> void:
 				var height:=minf(128.0,rect.end.y-y)
 				draw_texture_rect_region(_terrain,Rect2(x,y,width,height),Rect2(cell.x,row,cell.x*(width/128.0),cell.y*(height/128.0)),Color(0.72,0.72,0.75))
 	draw_line(rect.position,Vector2(rect.end.x,rect.position.y),Color(0.72,0.85,0.61) if restored else definition.accent,2)
+
+
+func _paint_background(origin: Vector2,view_size: Vector2) -> void:
+	draw_rect(Rect2(origin,view_size),Color(0.025,0.025,0.035))
+	if _background==null: return
+	if definition.has("background_texture"):
+		if _middle_background!=null:
+			_paint_panorama(origin,view_size)
+			draw_rect(Rect2(origin,view_size),definition.background_shade)
+			return
+		var image_size:=_background.get_size()
+		var scale:=maxf(view_size.x/image_size.x,view_size.y/image_size.y)*1.06
+		var dimensions:=image_size*scale
+		var overflow:=dimensions-view_size
+		var progress:=clampf(origin.x/maxf(1.0,float(definition.width)-view_size.x),0.0,1.0)
+		var offset:=Vector2(-overflow.x*lerpf(0.15,0.85,progress),-overflow.y*0.45)
+		draw_texture_rect(_background,Rect2(origin+offset,dimensions),false)
+		draw_rect(Rect2(origin,view_size),definition.background_shade)
+	else:
+		var width:=view_size.y*_background.get_width()/_background.get_height()
+		var shift:=fposmod(origin.x*0.15,width)
+		for index in [-1,0,1,2]:
+			var tint:=Color(0.69,0.68,0.73) if WorldProgress.land_state(region_id)==&"wasted" else Color(0.86,0.88,0.86)
+			draw_texture_rect(_background,Rect2(origin+Vector2(index*width-shift,0),Vector2(width,view_size.y)),false,tint)
+		draw_rect(Rect2(origin,view_size),Color(0.02,0.035,0.055,0.15))
+
+
+func _mineral_tint() -> Color:
+	return Color(0.87,0.84,0.97) if definition.get("scenery_style")==&"timber_pit" else Color(0.65,0.95,1)
+
+
+func _paint_scenery_platform(rect: Rect2,restored: bool=false) -> void:
+	if rect.size.y<=40.0:
+		var variant:=posmod(floori(rect.position.x/10.0),2)
+		var source: Rect2=definition.terrain_regions[2+variant]
+		var depth: float=definition.platform_depths[variant]
+		var sample_width:=minf(source.size.x,rect.size.x*depth/rect.size.y)
+		source.position.x+=fposmod(rect.position.x*1.7,maxf(1.0,source.size.x-sample_width))
+		source.size.x=sample_width
+		var dimensions:=Vector2(rect.size.x,rect.size.y*source.size.y/depth)
+		draw_texture_rect_region(_scenery_terrain,Rect2(rect.position,dimensions),source)
+	else:
+		var cap:=minf(32.0,rect.size.y)
+		var surface: Rect2=definition.terrain_regions[0]
+		var fill: Rect2=definition.terrain_regions[1]
+		for x in range(int(rect.position.x),int(rect.end.x),128):
+			var width:=minf(128.0,rect.end.x-x)
+			var sample_index:=posmod(floori(x/128.0),4)
+			var surface_x:=surface.position.x+sample_index*surface.size.x/4.0
+			var surface_width:=surface.size.x/4.0*width/128.0
+			var fill_x:=fill.position.x+sample_index*fill.size.x/4.0
+			var fill_width:=fill.size.x/4.0*width/128.0
+			draw_texture_rect_region(_scenery_terrain,Rect2(x,rect.position.y,width,cap),Rect2(surface_x,surface.position.y,surface_width,surface.size.y))
+			for y in range(int(rect.position.y+cap),int(rect.end.y),128):
+				var height:=minf(128.0,rect.end.y-y)
+				draw_texture_rect_region(_scenery_terrain,Rect2(x,y,width,height),Rect2(fill_x,fill.position.y,fill_width,fill.size.y*height/128.0))
+	draw_line(rect.position,Vector2(rect.end.x,rect.position.y),Color(0.65,0.8,0.47) if restored else definition.accent,2)
+
+
+func _paint_panorama(origin: Vector2,view_size: Vector2) -> void:
+	var images: Array[Texture2D]=[_background,_middle_background,_background]
+	var narrowest:=minf(_background.get_size().aspect(),_middle_background.get_size().aspect())
+	var height:=maxf(view_size.y*1.04,view_size.x*0.75/narrowest)
+	var overlap:=view_size.x*0.24
+	var widths: Array[float]=[]
+	var total: float=-overlap*2.0
+	for texture in images:
+		var width:=height*texture.get_width()/texture.get_height()
+		widths.append(width)
+		total+=width
+	var progress:=clampf(origin.x/maxf(1.0,float(definition.width)-view_size.x),0.0,1.0)
+	var left: float=origin.x-progress*maxf(0.0,total-view_size.x)
+	for index in images.size():
+		var rect:=Rect2(Vector2(left,origin.y-(height-view_size.y)*0.5),Vector2(widths[index],height))
+		_paint_panorama_panel(images[index],rect,0.0 if index==0 else overlap)
+		left+=widths[index]-overlap
+
+
+func _paint_panorama_panel(texture: Texture2D,rect: Rect2,fade: float) -> void:
+	# Blend the new panel's left edge over the preceding painting without editing
+	# either original image or allowing a viewport gap at the level boundaries.
+	var seam:=minf(fade,rect.size.x)
+	if seam>0:
+		draw_polygon(PackedVector2Array([rect.position,rect.position+Vector2(seam,0),rect.position+Vector2(seam,rect.size.y),rect.position+Vector2(0,rect.size.y)]),PackedColorArray([Color(1,1,1,0),Color.WHITE,Color.WHITE,Color(1,1,1,0)]),PackedVector2Array([Vector2.ZERO,Vector2(seam/rect.size.x,0),Vector2(seam/rect.size.x,1),Vector2(0,1)]),texture)
+	var rest:=Rect2(rect.position+Vector2(seam,0),Vector2(rect.size.x-seam,rect.size.y))
+	var source:=Rect2(Vector2(seam/rect.size.x*texture.get_width(),0),Vector2(rest.size.x/rect.size.x*texture.get_width(),texture.get_height()))
+	draw_texture_rect_region(texture,rest,source)

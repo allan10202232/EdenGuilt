@@ -81,7 +81,7 @@ func _campaign_objective() -> String:
 				return GameText.t("目标 ← 紫色能力源 R 卸下黑穿；伊甸城有两处能力源。")
 			if WorldProgress.has_ability(&"shield"):
 				return GameText.t("目标 ← 绿色能力源 R 卸下护盾，再从本关左端返回矿洞。")
-			return GameText.t("目标 ← 两种能力已卸下，从左端返回毒雾矿洞。")
+			return GameText.t("目标 ← 两种能力已卸下，从左端返回毒雾矿坑。")
 		if region==&"grassland":
 			return GameText.t("目标 ← 回到矿洞能力源按 R 修复并卸下碳矿化。") if WorldProgress.has_ability(&"mineralization") else GameText.t("目标 ← 矿洞已修复，从左端返回垃圾场。")
 		return GameText.t("目标 ← 回出生地能力源按 R 修复并卸下二段跳。") if WorldProgress.has_ability(&"double_jump") else GameText.t("目标 ← 四种能力已卸下，继续向左回家。")

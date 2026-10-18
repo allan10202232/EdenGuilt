@@ -12,7 +12,7 @@ const DEFINITIONS: Dictionary = {
 	&"mineralization": {"name": "碳矿化", "region": &"grassland", "key": "C", "route": "居民共同固化毒雾、修筑晶桥", "sound": &"absorb"},
 	&"black_pierce": {"name": "黑穿", "region": &"remnant_sea", "key": "F", "route": "居民拆除专用暗壁，打开公共通路", "sound": &"dash"},
 }
-const REGION_NAMES: Dictionary = {&"lone_tree": "垃圾场", &"grassland": "毒雾矿洞", &"remnant_sea": "伊甸城"}
+const REGION_NAMES: Dictionary = {&"lone_tree": "垃圾场", &"grassland": "毒雾矿坑", &"remnant_sea": "伊甸城"}
 
 
 static func definition(id: StringName) -> Dictionary:

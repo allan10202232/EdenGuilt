@@ -9,6 +9,9 @@
 | `main character shape1.png` | 红色面具骑士，去程主角造型参考 |
 | `main character shape2.png` | 绿色森林精灵，返程主角与能力源参考 |
 | `11461792281823_.pic.jpg` | 像素矿洞、木架和晶体的环境参考 |
+| `scenarios/Scenario1.png` | 第一关垃圾场的实际背景原图，原始文件内容完整保留 |
+| `scenarios/Scenario2.jpg` | 第二关矿坑的实际背景原图，原始文件内容完整保留 |
+| `scenarios/Scenario3.jpeg` | 从 main 拉取的 `伊甸园1-2.jpeg` 原样归档，第三关伊甸城的实际背景 |
 
 原根目录的两张角色图此前已改名为 shape1/shape2，本次沿用这两个文件名并集中到这里。
 原画不直接做透明化或重绘；版权和作者署名仍按美工提供的信息维护，不自动补写作者。
@@ -31,6 +34,12 @@
 | `animations/hero_red_actions.png` | 红色形态 24 帧动作，6×4 格 |
 | `animations/hero_green_actions.png` | 绿色形态 24 帧动作，6×4 格 |
 | `terrain/biome_atlas.png` | 两列三行图集：森林、垃圾场、矿厂；左列地表，右列填充 |
+| `scenarios/junkyard_middle.png` | 参考 Scenario1 补画的黄绿色雾气垃圾场中段背景 |
+| `scenarios/mine_middle.png` | 参考 Scenario2 补画的灰紫晶体矿坑中段背景 |
+| `scenarios/junkyard_terrain.png` | 同风格透明废铁、苔藓地面与悬台图集 |
+| `scenarios/mine_terrain.png` | 同风格透明岩层、白晶地面与木平台图集 |
+| `scenarios/eden_middle.png` | 参考 main 伊甸城原图补画的翠绿花园城中段 |
+| `scenarios/eden_terrain.png` | 同风格象牙白石阶、雕花石台和藤蔓悬台图集 |
 | `opening/soul_extractor.png` | 开场第一幕：球形吸魂器 |
 | `opening/eden_city.png` | 开场第二幕：结晶荒漠之上的伊甸环城 |
 | `opening/undercity.png` | 开场第三幕：地下死土矿区与聚落 |
@@ -45,7 +54,9 @@ PNG 透明通道已在 Godot 实际加载验证。角色与敌人使用 AtlasTex
 动作及帧布局见 [动作说明](../../docs/character-actions.md)，内置 image_gen 的完整提示词见 [动作生成记录](../../docs/character-action-prompts.md)。
 敌人仍使用静态透明图，保留移动、受击与攻击预警反馈。
 
-新版三关复用图集：垃圾场用第 2 行、矿场用第 3 行、伊甸园用第 1 行；伊甸守卫暂复用放大的苔藓兽。
+三关分别使用独立 Scenario 平台图集，旧 biome_atlas 保留给兼容场景和后续复用。
+平台图集的实际采样区域在 level_catalog.gd 中配置，用于校正生成图的透明留白并对齐可站立边缘。
+原图、生成中段和运行时衔接方式见 [场景整合说明](../../docs/scenario-art-integration.md)，完整提示词见 [提示词集](../../docs/scenario-art-prompts.json)。
 原森林背景保留为可复用美术，不再作为第一关入口。
 
 开场插画使用独立的像素显现/消散材质，不修改原图片。英文旁白由界面绘制，

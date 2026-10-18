@@ -69,6 +69,8 @@ func _run() -> void:
 	GameSession.return_to_menu()
 	await _physics(2)
 	SoundManager.stop_sfx()
+	# The audio mixer releases stopped WAV playback on its own real-time thread.
+	OS.delay_msec(150)
 	print("HEALTH: %d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(0 if _failures == 0 else 1)
 

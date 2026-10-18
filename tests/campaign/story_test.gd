@@ -72,7 +72,7 @@ func _run() -> void:
 	_check(WorldProgress.narrative_kind==&"" and CarbonLedger.gross_kg==0,"revisiting a learned source cannot replay or bill learning")
 	WorldProgress.enter_scene(&"grassland",Vector2(140,596))
 	await _ticks(10)
-	_check(_level().definition.title=="Toxic Cavern" and _level().npc.conversation().lines[2].contains("I Crystal"),"cavern NPC provides the seal sequence")
+	_check(_level().definition.title=="Toxic Mine Pit" and _level().npc.conversation().lines[2].contains("I Crystal"),"cavern NPC provides the seal sequence")
 	for enemy in _level().enemies: enemy.set_physics_process(false)
 	await _place(Vector2(530,596))
 	await _action(&"eden_absorb")

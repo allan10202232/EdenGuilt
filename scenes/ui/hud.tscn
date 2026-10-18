@@ -50,7 +50,7 @@ mouse_filter = 2
 script = ExtResource("4")
 
 [node name="Health" type="VBoxContainer" parent="Top/Panel/Row"]
-custom_minimum_size = Vector2(260, 0)
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_constants/separation = 2

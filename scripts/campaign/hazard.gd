@@ -7,6 +7,9 @@ var area := Rect2()
 var offset: float = 0.0
 var _clock: float = 0.0
 var neutralized: bool = false
+var support_texture: Texture2D
+var support_region:=Rect2()
+var support_depth: float=54.0
 
 
 func phase() -> int:
@@ -38,7 +41,12 @@ func _draw() -> void:
 				var x:=area.position.x+fposmod(index*17.0+sin(_clock*0.9+index)*12,area.size.x)
 				var y:=area.end.y-fposmod(_clock*35+index*27,area.size.y)
 				draw_circle(Vector2(x,y),18+sin(index+_clock)*5,Color(tint,0.14 if active==2 else 0.04))
-	draw_rect(Rect2(area.position-Vector2(12,12),Vector2(area.size.x+24,16)),Color(0.18,0.22,0.25))
+	if support_texture!=null:
+		var source:=support_region
+		source.size.x=minf(source.size.x,(area.size.x+24)*support_depth/16.0)
+		draw_texture_rect_region(support_texture,Rect2(area.position-Vector2(12,16),Vector2(area.size.x+24,source.size.y*16.0/support_depth)),source)
+	else:
+		draw_rect(Rect2(area.position-Vector2(12,12),Vector2(area.size.x+24,16)),Color(0.18,0.22,0.25))
 	draw_rect(Rect2(area.position,Vector2(area.size.x,4)),tint)
 	if active>0 or safe:
 		draw_rect(area,Color(tint,0.36 if active==2 else 0.07))
