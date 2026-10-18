@@ -1,0 +1,78 @@
+name: Build and release desktop game
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GODOT_VERSION: 4.7.2
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    name: Build ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: windows
+            runner: windows-latest
+          - target: macos
+            runner: macos-latest
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: builds/godot
+          key: godot-${{ runner.os }}-${{ env.GODOT_VERSION }}-${{ hashFiles('ci/desktop_release.py') }}
+      - name: Install matching Godot editor and export templates
+        run: python ci/desktop_release.py install --target ${{ matrix.target }}
+      - name: Import, test, export and smoke-test the packaged game
+        run: python ci/desktop_release.py build --target ${{ matrix.target }}
+      - name: Upload downloadable game
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: game-${{ matrix.target }}
+          path: builds/dist/*.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+      - name: Save diagnostic logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: logs-${{ matrix.target }}
+          path: builds/logs/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  release:
+    name: Publish both desktop downloads
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: game-*
+          merge-multiple: true
+          path: builds/dist
+      - name: Publish a release for this exact main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python ci/publish_release.py

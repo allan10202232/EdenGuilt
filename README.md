@@ -2,6 +2,10 @@
 ### The Cost of Paradise
 *English README &ensp;|&ensp; Playable three-chapter prototype*
 
+**[Download Windows / macOS builds](https://github.com/allan10202232/EdenGuilt/releases/latest)** · [Build status](https://github.com/allan10202232/EdenGuilt/actions/workflows/release.yml)
+
+Every push to `main` automatically builds and tests both desktop versions, then publishes a release. Extract the ZIP and open the game; Godot is not required. See [release and demo instructions](docs/releases.md).
+
 ---
 
 ## Overview
@@ -16,11 +20,11 @@ The game connects exploration and combat to resource extraction, carbon tracking
 
 **Requirements.** Use Godot **4.7.2**, matching the engine supplied with this workspace. The project uses GDScript and the GL Compatibility renderer; the .NET edition is not required. The included engine and launch scripts are for Windows.
 
-**Important project location.** In the supplied workspace, the active three-chapter game is `.remote_review/project.godot`. The top-level `prototype/` directory contains an older prototype.
+**Important project location.** The active three-chapter game is the repository-root `project.godot`. The `prototype/` directory contains an older prototype.
 
 ### Option 1: Open in the Godot editor
 1. Start Godot 4.7.2 and choose **Import** in the Project Manager.
-2. Select `D:/EdenGuilt/.remote_review/project.godot`, then import and edit the project. Adjust the drive or folder if moved.
+2. Select `project.godot` in your EdenGuilt checkout, then import and edit the project.
 3. Allow the first asset import to finish, then press **F5** to run the complete game.
 4. Press **Enter** to advance each passage of the illustrated prologue. After its last passage, press **Enter** to enter the first chapter. Release the key between presses.
 
@@ -33,4 +37,4 @@ Open PowerShell and run the following commands. They use the engine and project 
 Set-Location 'D:\EdenGuilt'
 $engineFolder = '.\tools\Godot\Godot_v4.7.2-stable_win64.exe'
 $edenEngine = Join-Path $engineFolder 'Godot_v4.7.2-stable_win64.exe'
-& $edenEngine --path '.\.remote_review'
+& $edenEngine --path '.'
