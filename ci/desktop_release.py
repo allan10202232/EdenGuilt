@@ -152,7 +152,7 @@ def build(target, supplied_engine=None):
             import plistlib
             binary_name = plistlib.load(source)["CFBundleExecutable"]
         game_binary = executable / "Contents/MacOS" / binary_name
-        subprocess.run(["lipo", "-verify_arch", "x86_64", "arm64", str(game_binary)], check=True)
+        subprocess.run(["lipo", str(game_binary), "-verify_arch", "x86_64", "arm64"], check=True)
         subprocess.run(["codesign", "--verify", "--deep", "--strict", str(executable)], check=True)
     else:
         game_binary = executable

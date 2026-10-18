@@ -148,5 +148,16 @@ func check(ok: bool, message: String) -> void:
 	print(("PASS: " if ok else "FAIL: ") + message)
 
 func finish() -> void:
+	# Headless CI advances fixed frames faster than the audio thread. Release
+	# the final scene, then let stopped playback references drain before exit.
+	SoundManager.stop_sfx()
+	SoundManager.stop_music()
+	var scene := get_tree().current_scene
+	get_tree().current_scene = null
+	if is_instance_valid(scene): scene.queue_free()
+	app = null
+	for frame in 5:
+		await get_tree().physics_frame
+	OS.delay_msec(150)
 	print("STANDALONE EXPORT: %d checks, %d failures" % [checks, failures])
 	get_tree().quit(0 if failures == 0 else 1)
