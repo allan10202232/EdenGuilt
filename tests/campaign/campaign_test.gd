@@ -36,17 +36,14 @@ func _run() -> void:
 	_check(WorldProgress.has_ability(&"double_jump") and CarbonLedger.gross_kg==0.0,"E learns double jump without charging until used")
 	await _source(&"eden_return")
 	_check(WorldProgress.has_ability(&"double_jump"),"cannot unload before truth and reversal")
-	await _teleport(Vector2(590,596))
-	var victim: CampaignEnemy=_level().enemies[0]
-	victim.position=Vector2(655,596)
-	victim.set_physics_process(false)
+	await _teleport(Vector2(280,476))
 	_player().face_direction(1)
 	_check(_player().combat.try_close(1.0),"campaign close melee is accepted")
 	var attack_carbon:=CarbonLedger.gross_kg
 	_check(not _player().combat.try_reach(1.0) and CarbonLedger.gross_kg==attack_carbon,"shared recovery rejects alternate attack without emission charge")
 	await _physics(18)
-	_check(WorldProgress.is_enemy_defeated(&"lone_tree/mob_0") and GameSession.score==50,"real melee defeats mechanical junkyard enemy and awards score")
-	await _teleport(Vector2(880,596))
+	_check(GameSession.score==0,"a missed slash cannot fabricate parkour rewards")
+	await _teleport(Vector2(280,476))
 	var before:=CarbonLedger.gross_kg
 	Input.action_press(&"eden_move_right")
 	await _action(&"eden_jump")
@@ -54,27 +51,25 @@ func _run() -> void:
 	await _physics(21)
 	await _action(&"eden_jump")
 	_check(is_equal_approx(CarbonLedger.gross_kg-before,5.0),"only actual air jump adds exactly 5 kg")
-	await _physics(56)
 	Input.action_release(&"eden_move_right")
-	await _physics(10)
-	_check(_player().position.x>1208 and _player().is_on_floor(),"double jump reaches junkyard raised landing")
+	_check(_player().velocity.y<0 and _player().position.x>350,"double jump resets upward motion over the first acid gap")
 	await _teleport(Vector2(1100,650))
+	_player()._jumps_used=1
+	_player()._jump_buffer=0
+	_player()._coyote=0
 	await _physics(10)
 	before=CarbonLedger.gross_kg
 	await _action(&"eden_jump")
 	_check(is_equal_approx(CarbonLedger.gross_kg-before,5.0),"expired ledge grace cannot disguise an air jump as a carbon-free ground jump")
-	await _teleport(Vector2(1320,476))
-	_check(WorldProgress.checkpoint_name()=="垃圾场 · 02","internal checkpoint has current scene name")
+	await _teleport(Vector2(1570,556))
+	_check(_level().current_section==1,"section two checkpoint has activated")
 	before=CarbonLedger.gross_kg
-	_player().stats.take_damage(100)
-	await _frames(4)
-	_check(GameSession.state==GameSession.State.GAME_OVER,"death opens checkpoint modal")
-	GameSession.resume_checkpoint()
-	await _frames(5)
-	await _physics(8)
+	_player().position.y=910
+	await _physics(2)
+	_check(GameSession.state==GameSession.State.PLAYING and WorldProgress.scrapyard_deaths==1,"acid death immediately resumes the current section")
 	_check(GameSession.health==100 and CarbonLedger.gross_kg==before,"checkpoint restores health without carbon rollback")
-	_check(_player().position.distance_to(Vector2(1320,476))<8 and _level().enemies.size()==4,"checkpoint keeps position and defeated enemy history")
-	await _teleport(Vector2(1500,470))
+	_check(_player().position.distance_to(Vector2(1570,556))<8 and WorldProgress.has_ability(&"double_jump"),"instant checkpoint keeps position and acquired ability")
+	await _teleport(Vector2(1570,556))
 	_check(not InputMap.has_action(&"eden_recycle"),"V recycling input is no longer registered")
 	var score_before_v:=GameSession.score
 	var press:=InputEventKey.new()
@@ -315,7 +310,7 @@ func _exit() -> void:
 
 
 func _entrance() -> void:
-	await _teleport(Vector2(36,570))
+	await _teleport(Vector2(36,476 if WorldProgress.current_scene==&"lone_tree" else 570))
 	await _frames(5)
 
 

@@ -19,10 +19,17 @@ func _ready() -> void:
 
 func _run() -> void:
 	_app = preload("res://scenes/main.tscn").instantiate()
+	# Combat health / Game Over uses the original controller fixture. The new
+	# mine's dedicated life HUD and checkpoint recovery have separate coverage.
+	_app.mine_scene=preload("res://tests/fixtures/legacy_mineralization_room.tscn")
 	add_child(_app)
 	GameSession.run_finished.connect(func(_result: Dictionary) -> void: _finished += 1)
 	GameSession.start_run()
 	await _physics(12)
+	# Health depletion / Game Over still apply in the combat chapters; parkour
+	# lethal damage uses the separately verified instant checkpoint recovery.
+	WorldProgress.enter_scene(&"grassland",Vector2(140,596))
+	await _physics(10)
 	_check(_orbs().get_half_count() == 10, "campaign starts with five full life orbs")
 	_check(_hud().get_node("%HealthLabel").text == "生命", "health is displayed without a numeric fraction")
 	await _capture("health-01-full")

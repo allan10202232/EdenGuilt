@@ -7,7 +7,7 @@ var _title: Label
 var _controls: Label
 var _close: Button
 var _menu: Button
-const GUIDE = "A/D 移动 · 空格跳跃（轻按低跳，长按高跳）\nShift 快跑 · 左键短砍 / 右键长砍\nE 吸取绿洲 · 空中再按空格二段跳\n矿坑 E / J 碳矿化脉冲 · C 也可释放\n按住 Q 护盾 · F 黑穿（可穿暗壁，不能穿普通墙）\nT 交谈 / 下一句 · R 与居民修复 / 卸下能力\n精准节奏提高能效，连发积累废热"
+const GUIDE = "A/D 移动 · 空格跳跃（垃圾场 / 矿坑固定跳高）\n伊甸城可长按高跳、Shift 快跑 · 左键短砍 / 右键长砍\nE 吸取绿洲 · 空中再按空格二段跳\n矿坑 E / J 碳矿化脉冲 · C 也可释放\n按住 Q 护盾 · F 黑穿（可穿暗壁，不能穿普通墙）\nT 交谈 / 下一句 · R 与居民修复 / 卸下能力\n精准节奏提高能效，连发积累废热"
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

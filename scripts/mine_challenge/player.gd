@@ -8,6 +8,7 @@ const MineAudio = preload("res://scripts/mine_challenge/mine_audio.gd")
 const MineralEffects = preload("res://scripts/mine_challenge/mineral_effects.gd")
 signal pulse_cast(converted: int)
 signal mineral_landed
+signal health_changed(current: int, maximum: int)
 @export var speed := 260.0
 @export var gravity := 980.0
 @export var jump_velocity := -420.0
@@ -47,6 +48,8 @@ var _footstep_clock := 0.0
 var _resonance_light := 0.0
 
 func _ready() -> void:
+	# Preserve injuries when moving between campaign chapters.
+	health=clampi(GameSession.health,1,100)
 	add_to_group(&"player")
 	collision_layer=2
 	collision_mask=5
@@ -132,8 +135,7 @@ func _physics_process(delta: float) -> void:
 			jumps_used=0
 			_coyote=0
 			_buffer=0
-			health=100
-			GameSession.sync_health(100,100)
+			_set_health(100)
 			get_node("Camera2D").reset_smoothing()
 			modulate=Color.WHITE
 			_art.play_action(&"channel",0.24)
@@ -208,16 +210,22 @@ func touch_gas(delta: float) -> void:
 	_gas_damage+=delta
 	if _gas_damage>=0.8:
 		_gas_damage=0
-		health-=10
+		_set_health(health-10)
 		if health<=0: dissolve()
 		else:
-			GameSession.sync_health(health,100)
 			_art.play_action(&"hurt",0.22)
 			_camera_impulse(2.5,0.14)
 			_play_mine_sound(&"hurt",-8.0)
 
+func _set_health(value: int) -> void:
+	health=clampi(value,0,100)
+	health_changed.emit(health,100)
+	# Mine deaths use the short checkpoint retry, rather than global Game Over.
+	if health>0: GameSession.sync_health(health,100)
+
 func dissolve() -> void:
 	if respawn_seconds>0 or not WorldProgress.can_play(): return
+	_set_health(0)
 	respawn_seconds=0.2
 	velocity=Vector2.ZERO
 	combat.cancel()

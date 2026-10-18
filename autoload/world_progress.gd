@@ -26,6 +26,7 @@ var campaign_rules: bool = true
 var narrative_active: bool = false
 var narrative_kind: StringName = &""
 var extraction_active: bool = false
+var scrapyard_deaths: int = 0
 var truth_revealed: bool = false
 var core_reversed: bool = false
 var ending_choice: StringName = &""
@@ -54,6 +55,7 @@ func reset_run() -> void:
 	narrative_active = false
 	narrative_kind = &""
 	extraction_active = false
+	scrapyard_deaths = 0
 	truth_revealed = false
 	core_reversed = false
 	ending_choice = &""

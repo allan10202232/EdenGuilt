@@ -31,16 +31,20 @@ func _run() -> void:
 	await ticks(8)
 	var hud: Control=app._hud
 	var level: CampaignLevel=app.get_node("LevelRoot").get_child(0)
+	check(level.definition.background_shade.is_equal_approx(Color(0.08,0.075,0.025,0.08)),"scrapyard retains the branch's warm low-opacity background tone")
 	for enemy in level.enemies: enemy.set_physics_process(false)
 	check(not hud.get_node("Abilities").visible and not hud.get_node("RouteMap").visible,"ability strip and route map are hidden")
 	check(not hud.get_node("%MuteButton").visible and hud._settings_button.visible,"one settings entry replaces utility controls")
 	check(not hud.get_node("Hint").text.contains(" E "),"objective has no key tutorial")
 	check((hud._tutorial_source.contains("A/D") and hud._tutorial.visible) if not movement_seen else not hud._tutorial_source.contains("A/D"),"movement tutorial respects saved preferences")
+	check(not hud._tutorial_source.contains("Shift") and not hud._tutorial_source.contains("长按"),"scrapyard movement tutorial matches its fixed jump and disabled sprint")
 	check(not FirstUseGuideScript.claim("movement"),"tutorial is shown only once")
 	var disk:=ConfigFile.new()
 	check(disk.load("user://tutorial_seen.cfg")==OK and disk.get_value("seen","movement",false),"tutorial progress persists to disk")
 	await capture("ui-clean-before")
 	hud._settings.open()
+	check(hud._settings._controls.text.contains("fixed height in Junkyard / Mine"),"settings explains the chapter-specific jump profiles")
+	check(level.parkour_hud.layer < app.get_node("UI").layer,"scrapyard status stays beneath settings and story modals")
 	var elapsed:=GameSession.elapsed_seconds
 	var point:=level.player.position
 	Input.action_press(&"eden_move_right")

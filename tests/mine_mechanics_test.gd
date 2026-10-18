@@ -9,11 +9,14 @@ func _run() -> void:
 	add_child(app)
 	GameSession.start_run()
 	await ticks(3)
+	GameSession.sync_health(80,100)
 	WorldProgress.enter_scene(&"grassland",Vector2.ZERO)
 	await ticks(5)
 	level=app.get_node("LevelRoot").get_child(0)
 	var actor: CharacterBody2D=level.player
 	var vent: Node=level.vents[0]
+	check(actor.health==80 and GameSession.health==80,"mine entrance preserves health from the previous chapter")
+	check(level._life_orbs.is_visible_in_tree() and level._life_orbs.get_half_count()==8,"custom mine HUD shows five green life vessels with inherited health")
 	actor.position=Vector2(860,1730)
 	actor.velocity=Vector2(90,-180)
 	var start_velocity:=actor.velocity
@@ -47,6 +50,7 @@ func _run() -> void:
 	await ticks(1)
 	Input.action_release(&"eden_move_right")
 	check(actor.health==hp-10 and absf(actor.velocity.x)<=143.1,"toxic gas damages and slows the player")
+	check(level._life_orbs.get_half_count()==7 and GameSession.health==actor.health,"gas damage immediately removes half a visible life vessel")
 	var stored_before: float=level.sequestered
 	level.activate_stage(2)
 	actor.position=Vector2(900,2055)
@@ -54,6 +58,11 @@ func _run() -> void:
 	await ticks(18)
 	check(actor.position.distance_to(level.checkpoint_position)<6 and actor.respawn_seconds==0,"acid respawns at the current checkpoint within 0.3 seconds")
 	check(level.sequestered==stored_before and actor.health==100,"acid keeps captured carbon and restores playable health")
+	check(level._life_orbs.get_half_count()==10 and GameSession.health==100,"acid checkpoint retry restores all five vessels and shared campaign health")
+	actor.dissolve()
+	check(level._life_orbs.get_half_count()==0 and GameSession.state==GameSession.State.PLAYING,"lethal acid empties mine health without triggering global Game Over")
+	await ticks(18)
+	check(level._life_orbs.get_half_count()==10 and actor.health==100,"fast death and respawn visibly refill the life vessels")
 	level.bridge.trigger()
 	await ticks(90)
 	check(level.bridge.bodies[0].get_child(0).disabled and not level.bridge.bodies[3].get_child(0).disabled,"bridge collapses from left to right rather than all at once")

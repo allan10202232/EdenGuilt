@@ -13,7 +13,7 @@ var _frame:=0
 var _record: Array[Dictionary]=[]
 
 func _ready() -> void:
-	get_tree().create_timer(360).timeout.connect(func() -> void:
+	get_tree().create_timer(600).timeout.connect(func() -> void:
 		push_error("Walkthrough timed out")
 		get_tree().quit(1)
 	)
@@ -46,19 +46,15 @@ func _run() -> void:
 
 func _journey(ending: String) -> void:
 	await _snapshot(ending+"-junkyard-start")
-	await _walk(420)
+	await _walk(230)
 	await _action(&"eden_absorb")
 	_check(WorldProgress.has_ability(&"double_jump"),"learn double jump via E")
-	await _walk(730)
-	await _walk(870)
-	await _leap(1280)
-	await _walk(1740)
-	await _leap(2010)
-	await _walk(2340)
-	await _leap(2820)
-	await _walk(3010)
-	await _leap(3240)
-	await _walk(3750)
+	var scrapyard := preload("res://tests/helpers/scrapyard_route.gd").new()
+	scrapyard.app = app
+	scrapyard.report = _check
+	add_child(scrapyard)
+	await scrapyard.run(false)
+	scrapyard.queue_free()
 	await _tick(8)
 	_check(WorldProgress.current_scene==&"grassland","enter toxic mine through junkyard exit")
 	if failures: return
@@ -133,13 +129,7 @@ func _journey(ending: String) -> void:
 	await _tick(8)
 	_check(WorldProgress.current_scene==&"lone_tree","return to junkyard without mineralization")
 	if failures: return
-	await _walk(2760)
-	await _leap(2300)
-	await _walk(1740)
-	await _leap(1540)
-	await _walk(1260)
-	await _leap(850)
-	await _walk(420)
+	await _walk(230)
 	await _action(&"eden_return")
 	await _snapshot("A-home-restored")
 	await _walk(36)
@@ -201,7 +191,7 @@ func _walk(target: float) -> void:
 	var action:=&"eden_move_right" if direction>0 else &"eden_move_left"
 	Input.action_press(action)
 	Input.action_press(&"eden_run")
-	for index in 800:
+	for index in 2400:
 		if failures or WorldProgress.current_scene!=region or GameSession.state!=GameSession.State.PLAYING or WorldProgress.narrative_active: break
 		if direction*(target-_player().position.x)<5: break
 		await _tick(1)

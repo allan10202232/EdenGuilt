@@ -1,0 +1,4 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="PackedScene" path="res://scenes/parkour/play_scrapyard.tscn" id="1"]
+[node name="PlayCrusherSection" instance=ExtResource("1")]
+start_section = 5

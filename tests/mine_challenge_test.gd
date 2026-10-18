@@ -12,8 +12,22 @@ func _run() -> void:
 	add_child(app)
 	GameSession.start_run()
 	await ticks(5)
-	WorldProgress.enter_scene(&"grassland",Vector2(140,596))
+	# Both complete input routes have their own suites. Stage the actor on the
+	# first chapter's last safe island, then cross its real exit with input.
+	var scrapyard: Node2D=app.get_node("LevelRoot").get_child(0)
+	check(scrapyard is ScrapyardParkourLevel and scrapyard.definition.width==9600,"campaign retains main's six-section scrapyard")
+	WorldProgress.borrow_ability(&"double_jump")
+	var first_exit: Vector2=CampaignLevels.definition(&"lone_tree").exit
+	scrapyard.player.position=first_exit-Vector2(50,24)
+	scrapyard.player.velocity=Vector2.ZERO
+	await ticks(2)
+	direction(1)
+	for frame in 40:
+		await ticks(1)
+		if WorldProgress.current_scene==&"grassland": break
+	direction(0)
 	await ticks(8)
+	check(WorldProgress.current_scene==&"grassland","real scrapyard exit loads the production eight-stage mine")
 	level=app.get_node("LevelRoot").get_child(0)
 	check(level.vents.size()==25,"25 gas vents include every mineralizable relay; no permanent climbing footholds")
 	check(not app._hud.visible and level.current_stage==1,"campaign loads the new mine with its dedicated HUD")
@@ -84,6 +98,12 @@ func _run() -> void:
 	direction(0)
 	await ticks(6)
 	check(WorldProgress.current_scene==&"lone_tree" and app._hud.visible,"return exit reconnects Junkyard with the normal HUD")
+	var returned: Node2D=app.get_node("LevelRoot").get_child(0)
+	check(returned is ScrapyardParkourLevel and returned.player.position.x>9320 and returned.player.position.y<350,"mine return spawns on the new scrapyard exit island")
+	check(returned._rescue_path and returned.player.is_on_floor(),"returning player stands on the continuous rescue walkway")
+	var returned_deaths:=WorldProgress.scrapyard_deaths
+	await ticks(30)
+	check(WorldProgress.current_scene==&"lone_tree" and WorldProgress.scrapyard_deaths==returned_deaths,"mine return neither bounces back into the mine nor falls into acid")
 	GameSession.return_to_menu()
 	await ticks(3)
 	SoundManager.stop_sfx()

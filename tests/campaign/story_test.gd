@@ -27,17 +27,18 @@ func _run() -> void:
 	await _click(app._menu.get_node("%StartButton"))
 	await _ticks(30)
 	_check(GameSession.state==GameSession.State.PLAYING and app.get_node("LevelRoot").get_child_count()==1,"Start enters one playable Junkyard without replaying the replaced opening")
-	_check(_level().definition.title=="Junkyard" and _level().growth_points.size()>20,"first level has localized title and dispersed ground life")
-	await _place(Vector2(260,596))
+	_check(_level().definition.title=="Junkyard" and _level().growth_points.size()>10,"first level has localized title and dispersed ground life")
+	await _place(Vector2(80,476))
 	await _key(KEY_T)
 	_check(app._dialogue.visible and WorldProgress.narrative_kind==&"npc","T opens a nearby NPC conversation")
 	var before:=GameSession.elapsed_seconds
 	var point:=_player().position
-	var mob_point: Vector2=_level().enemies[0].position
+	var magnet: ScrapPlatform=_level().platforms.filter(func(p: ScrapPlatform) -> bool: return p is MagnetLift)[0]
+	var magnet_point:=magnet.position
 	Input.action_press(&"eden_move_right")
 	await _ticks(24)
 	Input.action_release(&"eden_move_right")
-	_check(GameSession.elapsed_seconds==before and _player().position==point and _level().enemies[0].position==mob_point,"NPC dialogue freezes player, enemy and timer")
+	_check(GameSession.elapsed_seconds==before and _player().position==point and magnet.position==magnet_point,"NPC dialogue freezes player, moving machinery and timer")
 	_check(not _player().combat.try_close(1) and not WorldProgress.choose_ending(&"B"),"NPC conversation cannot attack or submit a story ending")
 	GameText.set_language("zh_CN",false)
 	await _ticks(2)
@@ -63,7 +64,7 @@ func _run() -> void:
 	await _key(KEY_T)
 	await _ticks(4)
 	_check(WorldProgress.can_play() and not app._dialogue.visible and _player().is_on_floor(),"final T closes subtitles without reopening the conversation")
-	await _place(Vector2(420,596))
+	await _place(Vector2(230,476))
 	await _action(&"eden_absorb",false)
 	_check(WorldProgress.extraction_active and not WorldProgress.has_ability(&"double_jump"),"skill is not granted before extraction completes")
 	_check(_level().extraction.active and _player()._art.action==&"extract" and _player()._art.extraction_sprite.visible,"learning uses the new Soul Extractor poses")

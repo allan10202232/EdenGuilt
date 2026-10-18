@@ -63,6 +63,15 @@ try {
     ) -LogPath $startupLog -Summary 'STARTUP'
     Write-Host "Startup configuration passed. Log: $startupLog"
 
+    $parkourLog = Join-Path $outputDirectory 'parkour.log'
+    $parkourArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $parkourLog)
+    if ($Screenshots) { $parkourArguments += @('--rendering-method', 'gl_compatibility') }
+    else { $parkourArguments += '--headless' }
+    $parkourArguments += 'res://tests/parkour_test.tscn'
+    if ($Screenshots) { $parkourArguments += @('--', '--screenshots') }
+    Invoke-GodotCheck -EngineArguments $parkourArguments -LogPath $parkourLog -Summary 'PARKOUR'
+    Write-Host "Six-section scrapyard parkour, instant checkpoints and both routes passed. Log: $parkourLog"
+
     $storyLog = Join-Path $outputDirectory 'story.log'
     $storyArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $storyLog)
     if ($Screenshots) { $storyArguments += @('--rendering-method', 'gl_compatibility') }

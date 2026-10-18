@@ -13,10 +13,15 @@ func _ready() -> void:
 func _run() -> void:
 	GameText.set_language("zh_CN",false)
 	app = preload("res://scenes/main.tscn").instantiate()
+	# Isolate enemy animation against the campaign combat controller; production
+	# mine parkour uses its own player and is exercised by mine_challenge_test.
+	app.mine_scene=preload("res://tests/fixtures/legacy_mineralization_room.tscn")
 	add_child(app)
 	await _ticks(4)
 	GameSession.start_run()
 	await _ticks(25)
+	WorldProgress.enter_scene(&"grassland",Vector2(140,596))
+	await _ticks(10)
 	var level: CampaignLevel = app.get_node("LevelRoot").get_child(0)
 	var player: CharacterBody2D = level.player
 	for other: CampaignEnemy in level.enemies:

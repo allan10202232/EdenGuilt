@@ -107,6 +107,16 @@ func _process(delta: float) -> void:
 
 
 func _update_progress() -> void:
+	# The first chapter uses this space for its six-section parkour status panel.
+	var parkour := WorldProgress.campaign_rules and WorldProgress.current_scene == &"lone_tree"
+	$CarbonDashboard.visible = not parkour
+	$Abilities.hide()
+	$RouteMap.hide()
+	%Notice.anchor_top = 1.0 if parkour else 0.0
+	%Notice.anchor_bottom = 1.0 if parkour else 0.0
+	%Notice.offset_left = -540 if parkour else -330
+	%Notice.offset_top = -108 if parkour else 150
+	%Notice.offset_bottom = -24 if parkour else 245
 	var labels: Array[Label] = [%DoubleJump, %Dash, %Shield, %LightBlade]
 	var ids: Array = [&"double_jump", &"mineralization", &"shield", &"black_pierce"] if WorldProgress.campaign_rules else [&"double_jump", &"dash", &"shield", &"light_blade"]
 	for index in ids.size():
@@ -130,7 +140,7 @@ func _update_progress() -> void:
 	]
 	if WorldProgress.campaign_rules:
 		$Hint.text=_campaign_objective()
-		$Hint.show()
+		$Hint.visible = not parkour
 
 
 func _campaign_objective() -> String:
@@ -148,7 +158,7 @@ func _campaign_objective() -> String:
 			return GameText.t("← 回矿洞绿洲修复，交还碳矿化。") if WorldProgress.has_ability(&"mineralization") else GameText.t("目标 ← 矿洞已修复，从左端返回垃圾场。")
 		return GameText.t("← 修复出生地绿洲，交还二段跳。") if WorldProgress.has_ability(&"double_jump") else GameText.t("目标 ← 四种能力已卸下，继续向左回家。")
 	if region==&"lone_tree":
-		return GameText.t("→ 越过断崖，前往矿洞。") if WorldProgress.has_ability(&"double_jump") else GameText.t("→ 寻找绿色绿洲，获得二段跳。")
+		return ScrapyardLayout.text("→ Cross six scrapyard sections to the mine.", "→ 穿过六段废料跑酷区，前往矿洞。") if WorldProgress.has_ability(&"double_jump") else GameText.t("→ 寻找绿色绿洲，获得二段跳。")
 	if region==&"grassland":
 		if not WorldProgress.has_ability(&"mineralization"):
 			return GameText.t("→ 寻找矿洞绿洲，获得碳矿化。")
@@ -205,7 +215,10 @@ func _offer_tutorial() -> void:
 	var actor := get_tree().get_first_node_in_group(&"player")
 	if actor == null or not actor.get_parent() is CampaignLevel: return
 	var level: CampaignLevel = actor.get_parent()
-	if _offer("movement","A/D 移动 · 空格跳跃 · 长按跳得更高 · Shift 快跑"): return
+	var movement_help := "A/D 移动 · 空格跳跃 · 长按跳得更高 · Shift 快跑"
+	if not actor.variable_jump and not actor.allow_sprint:
+		movement_help = "A/D 移动 · 空格跳跃"
+	if _offer("movement",movement_help): return
 	if WorldProgress.core_reversed and _offer("return","回到绿洲按 R，与居民共同修复并卸下能力。"): return
 	for id: StringName in [&"double_jump", &"mineralization", &"shield", &"black_pierce"]:
 		if WorldProgress.has_ability(id):

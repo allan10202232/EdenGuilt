@@ -50,6 +50,12 @@ lever state and captured-carbon totals survive checkpoint reloads. A new run
 clears them. Checkpoint triggers must be reached in order; the bridge checkpoint
 also requires the lever to be active.
 
+The mine's dedicated HUD shows the same five green life vessels as the campaign.
+Entry preserves the previous chapter's health; each 10 HP gas hit removes half a
+vessel immediately. Lethal acid empties them without opening global Game Over,
+then the short checkpoint retry restores all five. The homeward exit derives
+its destination from the current Junkyard exit, including the six-section layout.
+
 ## Reusable prefabs
 
 All six scenes are under `scenes/mine_challenge/`, with their implementations in

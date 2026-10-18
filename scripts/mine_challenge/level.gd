@@ -10,6 +10,7 @@ const AcidScene=preload("res://scenes/mine_challenge/deadly_acid_pit.tscn")
 const BridgeScene=preload("res://scenes/mine_challenge/collapsing_crystal_bridge.tscn")
 const SettingsScript=preload("res://scripts/ui/settings_panel.gd")
 const GuideScript=preload("res://scripts/ui/first_use_guide.gd")
+const LifeOrbsScript=preload("res://scripts/ui/life_orbs.gd")
 const STAGES=["START", "CRYSTALLIZE THE FIRST VENT", "PUSH CRATE / OPEN GAS SHAFT", "CLIMB THE GAS SHAFT", "REDIRECT THE GAS FLOW", "CROSS THE COLLAPSING BRIDGE", "NARROW DOUBLE JUMP ASCENT", "EXIT"]
 const STAGES_ZH=["矿坑入口", "矿化首个气柱", "推箱开启主气阀", "攀升毒气竖井", "重新引导气流", "穿越崩塌晶桥", "窄台二段跳攀升", "矿坑出口"]
 const CHECKPOINTS=[Vector2(180,1778),Vector2(560,1778),Vector2(1200,1428),Vector2(1870,1818),Vector2(2540,698),Vector2(2510,1728),Vector2(4500,1678),Vector2(5340,378)]
@@ -35,6 +36,7 @@ var _stage_label: Label
 var _jump_label: Label
 var _carbon_label: Label
 var _health_label: Label
+var _life_orbs: LifeOrbsScript
 var _cooldown_label: Label
 var _cooldown: ProgressBar
 var _tutorial: Label
@@ -138,7 +140,7 @@ func _build_layout() -> void:
 	)
 	area(Rect2(60,1660,50,150),"HomewardExit").body_entered.connect(func(actor: Node2D) -> void:
 		if actor==player and _returning and WorldProgress.ability_state(&"mineralization")==WorldProgress.AbilityState.RETURNED:
-			WorldProgress.enter_scene(&"lone_tree",Vector2(3650,596))
+			WorldProgress.enter_scene(&"lone_tree",CampaignLevels.definition(&"lone_tree").exit-Vector2(40,24))
 	)
 
 func deck(rect: Rect2) -> StaticBody2D:
@@ -301,6 +303,11 @@ func _build_hud() -> void:
 	var box:=VBoxContainer.new()
 	box.add_theme_constant_override(&"separation",6)
 	panel.add_child(box)
+	_life_orbs=LifeOrbsScript.new()
+	_life_orbs.name="MineLifeOrbs"
+	box.add_child(_life_orbs)
+	_life_orbs.set_health(player.health,100)
+	player.health_changed.connect(_life_orbs.set_health)
 	_stage_label=label(box,"",17)
 	_jump_label=label(box,"",15)
 	_cooldown_label=label(box,"",13)
