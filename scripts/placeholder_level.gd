@@ -57,11 +57,11 @@ func _physics_process(_delta: float) -> void:
 	if not WorldProgress.route_open(&"shield") or region_id != &"remnant_sea":
 		for area in _hazard_areas:
 			if area.overlaps_body(player):
-				player.hurt(25)
+				player.hurt()
 				break
 	for mob in _mobs:
 		if is_instance_valid(mob) and mob.is_alive() and mob.get_node("Hurtbox").overlaps_body(player):
-			player.hurt(25)
+			player.hurt()
 	if Input.is_action_just_pressed(&"eden_trial_blade") and OS.is_debug_build():
 		WorldProgress.borrow_ability(&"light_blade")
 	if player.position.distance_to(Vector2(220, 580)) < 95.0:

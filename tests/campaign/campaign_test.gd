@@ -97,7 +97,7 @@ func _run() -> void:
 	hazard._clock=2.3
 	var health_before:=GameSession.health
 	await _physics(3)
-	_check(GameSession.health==health_before-20,"unprocessed toxic vent causes real damage")
+	_check(GameSession.health==health_before-10,"unprocessed toxic vent removes half a life orb")
 	_player()._mineral_recovery=0.0
 	await _action(&"eden_mineralize")
 	_check(hazard.neutralized and hazard.phase()==0,"mineralization converts local toxic hazard to safe crystal")
@@ -123,7 +123,7 @@ func _run() -> void:
 	_check(is_equal_approx(CarbonLedger.gross_kg-before,20.0),"shield activation charges exactly 20 kg")
 	_player()._invulnerability=0.0
 	health_before=GameSession.health
-	_player().hurt(20)
+	_player().hurt()
 	_check(GameSession.health==health_before and WorldProgress.shield_active,"shield still blocks damage")
 	await _physics(89)
 	_check(not WorldProgress.shield_active and is_equal_approx(CarbonLedger.gross_kg-before,20.0),"holding key cannot create endless shield or repeated frame costs")
@@ -176,7 +176,7 @@ func _run() -> void:
 	await _physics(3)
 	_check(boss._windup>0,"live guardian AI telegraphs its attack")
 	await _physics(48)
-	_check(GameSession.health==health_before-30,"live guardian resolves its telegraphed strike")
+	_check(GameSession.health==health_before-10,"live guardian strike removes half a life orb")
 	_player().stats.heal(100)
 	_player()._invulnerability=0
 	boss._attack_cooldown=0

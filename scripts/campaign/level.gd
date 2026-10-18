@@ -156,7 +156,7 @@ func _physics_process(_delta: float) -> void:
 	if not WorldProgress.repaired_regions.has(region_id):
 		for area in _spike_areas:
 			if area.overlaps_body(player):
-				player.hurt(20)
+				player.hurt()
 	if WorldProgress.core_reversed and region_id==&"remnant_sea" and player.position.distance_to(definition.exit)<140.0 and Input.is_action_just_pressed(&"eden_return"):
 		if WorldProgress.repair_current_region():
 			WorldProgress.set_notice("3 位居民已共同打通伊甸园公共路线。向左回两个能力源卸下护盾和黑穿。")

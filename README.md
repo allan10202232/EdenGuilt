@@ -5,6 +5,11 @@
 横版 2D 类恶魔城项目，Godot **4.7.2 / GDScript / GL Compatibility**。
 三关动作探索、实时碳账本与能效仪表盘、污染反馈、双形态、结局 A/B 与玩家个人可持续行为审计报告。
 
+## 本次更新
+
+- **开场动画**：增加吸魂器、伊甸环城、地下矿区和主角拾取吸魂器四幕英文旁白；插画逐像素显现并以像素方式转场，最后一幕缓慢淡入。按 Enter 推进并进入游戏。
+- **生命显示与受伤规则**：HUD 改为五颗绿色像素生命球；敌人、Boss、弹丸和危险机关每次有效命中扣半颗，并从右向左逐颗扣除。十次有效受伤耗尽生命，检查点回复一颗半，死亡后恢复五颗。
+
 ## 打开和试玩
 
 在 Godot 导入根目录 `project.godot`，按 **F5**，先播放四幕英文像素开场。
@@ -60,10 +65,11 @@
 玩法与计算口径见 [碳系统设计](docs/carbon-system.md)。汽油类比使用 [EPA 的 8.887 kg CO₂ / 美制加仑](https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references)；
 材料替代比属于教学假设。游戏数据类比不代表现实排放、抵销或经核查减排；修复不会抹去累计排放历史。
 
-金色碎片各加 100 分；小怪一击击败加 50 分，Boss 加 500 分。尖刺和喷口扣 20 生命，
-小怪接触/弹丸扣 15，Boss 接触扣 25、范围攻击扣 30；狂暴提升移动和攻击频率，接触额外 +5。
-伤害有短暂无敌，护盾和黑穿期间可防御。
-点亮灯火保存检查点并回复 30 生命。死亡或坠落后，弹窗提供：
+金色碎片各加 100 分；小怪一击击败加 50 分，Boss 加 500 分。
+玩家生命显示为五颗绿色像素生命球；每次有效受伤扣半颗，从最右一颗开始，先扣半颗再扣完该颗，
+之后轮到左边一颗。敌人接触、弹丸、Boss 和危险机关都遵守同一规则，十次有效受伤耗尽生命。
+受伤有 0.85 秒无敌时间，护盾、冲刺和黑穿期间可防御；狂暴提升怪物移动和攻击频率。
+点亮灯火保存检查点并回复一颗半生命球。死亡或坠落后，弹窗提供：
 
 - **从检查点继续**：恢复生命；保留得分、能力、世界进度、碳账本、热负荷和已发生的环保行为。
 - **重新开始整局**：重置全部本局进度。
@@ -118,7 +124,7 @@ Q/E/R 和 F 黑穿的映射已由用户确认；光刃在试玩版开局提供�
 .\tests\run-tests.ps1 -Godot 'C:\Tools\Godot_v4.7.2-stable_win64_console.exe'
 ```
 
-增加 `-Screenshots` 会启用真实渲染并保存开场、主菜单、HUD、死亡、三关、Boss、返程、胜利及近战和角色动作截图：
+增加 `-Screenshots` 会启用真实渲染并保存开场、生命球、主菜单、HUD、死亡、三关、Boss、返程、胜利及近战和角色动作截图：
 
 ```powershell
 .\tests\run-tests.ps1 -Godot 'C:\Tools\Godot_v4.7.2-stable_win64_console.exe' -Screenshots
@@ -130,6 +136,7 @@ Q/E/R 和 F 黑穿的映射已由用户确认；光刃在试玩版开局提供�
 godot --headless --path . --editor --import --quit
 godot --headless --path . --audio-driver Dummy res://tests/startup_test.tscn
 godot --headless --path . --audio-driver Dummy res://tests/opening_test.tscn
+godot --headless --path . --audio-driver Dummy res://tests/health_test.tscn
 godot --headless --path . --audio-driver Dummy res://tests/phase_one_test.tscn
 godot --headless --path . --audio-driver Dummy res://tests/melee_test.tscn
 godot --headless --path . --audio-driver Dummy res://tests/carbon/carbon_test.tscn
@@ -141,9 +148,10 @@ godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/campai
 
 验收程序在检查失败、引擎错误或警告时返回非零退出码；仅允许引擎提示忽略 `prototype/` 嵌套工程的已知警告。
 生成的导入缓存、日志和截图位于已忽略的 `.godot/`、`test-output/`。
-开场接入后的无窗口回归共 562 项通过，包含开场、正常输入、真实伤害与敌人 AI 的 A/B 完整试玩；原有试玩记录见 [试玩与卡点检查](docs/walkthrough-review.md)。
+当前无窗口回归共 589 项通过，包含开场、生命球、正常输入、真实伤害与敌人 AI 的 A/B 完整试玩；原有试玩记录见 [试玩与卡点检查](docs/walkthrough-review.md)。
 开场另经真实渲染检查，98 项通过；已查看像素显现、英文长句、地下矿区与最后一幕淡入的实际截图。
 开场验收覆盖八句旁白顺序、长按/转场输入、窗口缩放、四张图片加载，以及最后一次 Enter 仅启动一局游戏。
+生命球另经真实渲染检查，32 项通过，覆盖满血、半球、空球、最后半球，以及十次受伤后的死亡和检查点恢复。
 HUD 持续显示当前目标；居民共建后的危险区解除，守卫在入口内被击败时也会正确触发真相剧情。
 入口另经全新目录、不带 `.godot/` 缓存的导入与启动检查。
 

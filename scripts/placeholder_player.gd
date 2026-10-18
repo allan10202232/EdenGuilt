@@ -161,14 +161,14 @@ func _draw() -> void:
 		draw_arc(Vector2.ZERO, 35.0, 0.0, TAU, 32, Color(0.45, 0.8, 0.95), 3.0)
 
 
-func hurt(amount: int) -> void:
+func hurt() -> void:
 	if _invulnerability > 0.0 or not WorldProgress.can_play() or WorldProgress.shield_active or _dash_remaining>0.0 or _pierce_flash>0.0:
 		return
 	_invulnerability = 0.85
 	combat.cancel()
 	if _art!=null: _art.play_action(&"hurt",0.22)
 	SoundManager.play_sfx(&"hurt")
-	stats.take_damage(amount)
+	stats.take_hit()
 
 
 func try_mineralize() -> bool:

@@ -66,7 +66,7 @@ func _physics_process(delta: float) -> void:
 		if _windup <= 0.0:
 			if boss:
 				if absf(distance.x) < 255.0 and absf(distance.y) < 85.0:
-					player.hurt(30)
+					player.hurt()
 			else:
 				projectile_fired.emit(global_position+Vector2(_direction*24,-8),_direction)
 	elif _stun <= 0.0:
@@ -84,7 +84,7 @@ func _physics_process(delta: float) -> void:
 	_skin.modulate = Color(1.0,0.6,0.6) if _stun>0.0 else Color(1.0,0.7,0.63) if is_enraged() else Color.WHITE
 	_skin.position.y = (-18.0 if boss else -11.0)+sin(_clock*7.0)*1.5
 	if _hurtbox.overlaps_body(player):
-		player.hurt((25 if boss else 15)+(5 if is_enraged() else 0))
+		player.hurt()
 	queue_redraw()
 
 

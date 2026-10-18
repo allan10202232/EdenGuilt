@@ -73,7 +73,7 @@ func _run() -> void:
 	_player().combat.try_reach(1)
 	await _physics(1)
 	_player()._invulnerability=0
-	_player().hurt(5)
+	_player().hurt()
 	await _physics(1)
 	_check(not _player().combat.is_busy() and _visual().action==&"hurt","damage cancels melee windup and shows recoil")
 	WorldProgress.enter_scene(&"grassland",Vector2(1150,596))
