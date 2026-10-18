@@ -24,4 +24,4 @@ func _draw() -> void:
 	draw_circle(origin+Vector2(data.source)*scale, 3, Color(0.29, 0.38, 0.19))
 	draw_rect(Rect2(origin+Vector2(data.exit)*scale-Vector2(2, 3), Vector2(4, 6)), GothicSkin.INK)
 	GothicSkin.diamond(self, origin+player.position*scale, 5, Color(0.57, 0.12, 0.12))
-	draw_string(get_theme_default_font(), Vector2(16, 23), GameText.t("归途手记  ←  与居民共同修复") if WorldProgress.returning else GameText.t("旅途手记  ·  垃圾场 → 矿洞 → 伊甸城"), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, GothicSkin.INK)
+	GothicSkin.draw_text(self,get_theme_default_font(), Vector2(16, 23), GameText.t("归途手记  ←  与居民共同修复") if WorldProgress.returning else GameText.t("旅途手记  ·  垃圾场 → 矿洞 → 伊甸城"),12)

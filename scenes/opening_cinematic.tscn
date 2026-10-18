@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/opening_cinematic.gd" id="1_opening"]
+[ext_resource type="Theme" path="res://assets/ui_theme.tres" id="2_theme"]
 
 [node name="OpeningCinematic" type="Control"]
 layout_mode = 3
@@ -10,3 +11,4 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_opening")
+theme = ExtResource("2_theme")

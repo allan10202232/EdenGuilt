@@ -101,7 +101,7 @@ func _build_presentation() -> void:
 	_missing_art_label.text = "Opening artwork could not be loaded."
 	_missing_art_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_missing_art_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_missing_art_label.add_theme_color_override("font_color", Color("e2a18a"))
+	_missing_art_label.add_theme_color_override("font_color", Color.WHITE)
 	_missing_art_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_missing_art_label)
 
@@ -111,7 +111,7 @@ func _build_presentation() -> void:
 	add_child(_subtitle_panel)
 
 	_chapter_label = Label.new()
-	_chapter_label.add_theme_color_override("font_color", Color("b6cbaa"))
+	_chapter_label.add_theme_color_override("font_color", Color.WHITE)
 	_chapter_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_subtitle_panel.add_child(_chapter_label)
 
@@ -119,19 +119,19 @@ func _build_presentation() -> void:
 	narration_label.name = "Narration"
 	narration_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	narration_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	narration_label.add_theme_color_override("font_color", Color("eee9db"))
+	narration_label.add_theme_color_override("font_color", Color.WHITE)
 	narration_label.add_theme_constant_override("line_spacing", 6)
 	narration_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_subtitle_panel.add_child(narration_label)
 
 	_advance_label = Label.new()
-	_advance_label.add_theme_color_override("font_color", Color("a7aca9"))
+	_advance_label.add_theme_color_override("font_color", Color.WHITE)
 	_advance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_advance_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_subtitle_panel.add_child(_advance_label)
 
 	_progress_label = Label.new()
-	_progress_label.add_theme_color_override("font_color", Color("64716f"))
+	_progress_label.add_theme_color_override("font_color", Color.WHITE)
 	_progress_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_subtitle_panel.add_child(_progress_label)
 

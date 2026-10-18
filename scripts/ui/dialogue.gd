@@ -1,85 +1,71 @@
 extends Control
 signal closed
 var _speaker: Label
-var _body: RichTextLabel
-var _next: Button
+var _body: Label
 var _lines: Array=[]
 var _index:=0
-var _reveal:=0.0
 var _closing:=false
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var shade:=ColorRect.new()
-	shade.color=Color(0.02,0.015,0.01,0.55)
-	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(shade)
+	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	var margin:=MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for side in ["left","right"]: margin.add_theme_constant_override(StringName("margin_"+side),100)
-	margin.add_theme_constant_override(&"margin_top",380)
-	margin.add_theme_constant_override(&"margin_bottom",50)
+	margin.name="Subtitles"
+	margin.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	margin.offset_left=90
+	margin.offset_right=-90
+	margin.offset_top=-170
+	margin.offset_bottom=-28
+	margin.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	add_child(margin)
 	var panel:=PanelContainer.new()
-	panel.add_theme_stylebox_override(&"panel",GothicSkin.panel(0,24))
+	panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	var backing:=StyleBoxFlat.new()
+	backing.bg_color=Color(0.025,0.022,0.015,0.50)
+	for side in [SIDE_LEFT,SIDE_RIGHT]: backing.set_content_margin(side,24)
+	for side in [SIDE_TOP,SIDE_BOTTOM]: backing.set_content_margin(side,12)
+	panel.add_theme_stylebox_override(&"panel",backing)
 	margin.add_child(panel)
 	var column:=VBoxContainer.new()
-	column.add_theme_constant_override(&"separation",12)
+	column.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	column.add_theme_constant_override(&"separation",6)
 	panel.add_child(column)
-	var row:=HBoxContainer.new()
-	column.add_child(row)
 	_speaker=Label.new()
-	_speaker.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-	_speaker.add_theme_font_size_override(&"font_size",22)
-	row.add_child(_speaker)
-	row.add_child(LanguagePicker.new())
-	_body=RichTextLabel.new()
-	_body.custom_minimum_size.y=95
+	_speaker.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	_speaker.add_theme_font_size_override(&"font_size",16)
+	_speaker.add_theme_color_override(&"font_color",Color.WHITE)
+	column.add_child(_speaker)
+	_body=Label.new()
+	_body.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	_body.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
+	_body.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	_body.size_flags_vertical=Control.SIZE_EXPAND_FILL
-	_body.fit_content=false
-	_body.add_theme_font_override(&"normal_font",preload("res://assets/ui_theme.tres").default_font)
-	_body.add_theme_font_size_override(&"normal_font_size",19)
+	_body.add_theme_font_size_override(&"font_size",22)
+	_body.add_theme_color_override(&"font_color",Color.WHITE)
+	_body.add_theme_color_override(&"font_outline_color",Color.BLACK)
+	_body.add_theme_constant_override(&"outline_size",4)
 	column.add_child(_body)
-	var actions:=HBoxContainer.new()
-	column.add_child(actions)
-	_next=Button.new()
-	_next.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-	_next.pressed.connect(advance)
-	actions.add_child(_next)
-	var leave:=Button.new()
-	leave.text=GameText.t("结束交谈")
-	leave.pressed.connect(close)
-	actions.add_child(leave)
 	GameText.language_changed.connect(_refresh)
 	hide()
 
 func present(speaker: String, lines: Array) -> void:
+	if lines.is_empty(): return
 	_speaker.text=speaker
 	_lines=lines.duplicate()
 	_index=0
 	_closing=false
 	_refresh()
 	show()
-	_next.grab_focus()
 
 func _refresh() -> void:
 	if _lines.is_empty(): return
 	_speaker.text=GameText.t(_speaker.text)
 	_body.text=GameText.t(String(_lines[_index]))
-	_reveal=0
-	_body.visible_characters=0
-	_next.text=GameText.t("继续 · Enter / T") if _index<_lines.size()-1 else GameText.t("结束交谈")
-
-func _process(delta: float) -> void:
-	if not visible: return
-	_reveal+=delta*48
-	_body.visible_characters=int(_reveal)
+	_body.visible_characters=-1
 
 func _input(event: InputEvent) -> void:
 	if not visible or event.is_echo(): return
-	if LanguagePicker.popup_is_open(self): return
-	if event.is_action_pressed(&"eden_talk") or event.is_action_pressed(&"ui_accept"):
-		if event.is_action_pressed(&"ui_accept") and get_viewport().gui_get_focus_owner() is BaseButton: return
+	if event.is_action_pressed(&"eden_talk"):
 		advance()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed(&"ui_cancel"):
@@ -88,10 +74,6 @@ func _input(event: InputEvent) -> void:
 
 func advance() -> void:
 	if _closing: return
-	if _body.visible_characters>=0 and _body.visible_characters<_body.get_total_character_count():
-		_reveal=10000
-		_body.visible_characters=-1
-		return
 	_index+=1
 	if _index>=_lines.size(): close()
 	else: _refresh()
@@ -102,7 +84,7 @@ func close() -> void:
 	hide()
 	_lines.clear()
 	_index=0
-	# Consume the confirmation edge before physics resumes (Space must not jump).
+	# Consume the last T press before NPC interaction can resume.
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	if WorldProgress.narrative_kind==&"npc":

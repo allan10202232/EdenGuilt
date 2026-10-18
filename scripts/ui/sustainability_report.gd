@@ -119,11 +119,11 @@ func _export() -> void:
 	_status.text=GameText.t("已保存 HTML 可视化报告、JSON 数据和 CSV 事件账本。") if exported_paths.get("ok",false) else exported_paths.get("error",GameText.t("导出失败"))
 
 
-func _label(parent: Node,text: String,size: int,tint: Color=GothicSkin.IVORY) -> Label:
+func _label(parent: Node,text: String,size: int,_tint: Color=GothicSkin.IVORY) -> Label:
 	var label:=Label.new()
 	label.text=text
 	label.add_theme_font_size_override(&"font_size",size)
-	label.modulate=tint
+	label.modulate=Color.WHITE
 	parent.add_child(label)
 	return label
 

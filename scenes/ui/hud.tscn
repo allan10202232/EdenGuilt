@@ -59,7 +59,7 @@ theme_override_constants/separation = 2
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-theme_override_colors/font_color = Color(0.62, 0.82, 0.65, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 text = "生命"
 
 [node name="LifeOrbs" type="Range" parent="Top/Panel/Row/Health"]
@@ -161,7 +161,7 @@ offset_top = 275.0
 offset_right = -32.0
 offset_bottom = 385.0
 theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(0.79, 0.72, 0.56, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 autowrap_mode = 2
 mouse_filter = 2
 
@@ -176,7 +176,7 @@ offset_left = -310.0
 offset_top = 203.0
 offset_right = -32.0
 offset_bottom = 267.0
-theme_override_colors/font_color = Color(0.88, 0.81, 0.64, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_shadow_color = Color(0.06, 0.04, 0.02, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 2

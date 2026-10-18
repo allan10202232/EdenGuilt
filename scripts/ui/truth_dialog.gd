@@ -61,10 +61,10 @@ func choose(choice: StringName) -> void:
 		focus.release_focus()
 
 
-func _label(parent: Node,text: String,font_size: int,tint: Color=GothicSkin.IVORY) -> Label:
+func _label(parent: Node,text: String,font_size: int,_tint: Color=GothicSkin.IVORY) -> Label:
 	var label:=Label.new()
 	label.text=text
 	label.add_theme_font_size_override(&"font_size",font_size)
-	label.modulate=tint
+	label.modulate=Color.WHITE
 	parent.add_child(label)
 	return label

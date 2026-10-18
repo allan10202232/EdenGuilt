@@ -53,13 +53,16 @@ func _ready() -> void:
 	WorldProgress.ability_used.connect(_on_ability_used)
 	WorldProgress.enemy_defeated.connect(func(_id: StringName) -> void: play_sfx(&"enemy_down"))
 	WorldProgress.checkpoint_changed.connect(func() -> void:
-		if GameSession.state == GameSession.State.PLAYING:
+		if GameSession.state == GameSession.State.PLAYING and get_tree().get_first_node_in_group(&"mine_audio")==null:
 			play_sfx(&"checkpoint")
 	)
 	GameSession.checkpoint_resumed.connect(func() -> void: play_sfx(&"checkpoint"))
 
 
 func _on_ability_used(id: StringName) -> void:
+	# The mine supplies its own layered Foley and mineralization cues.
+	if id in [&"double_jump",&"mineralization"] and get_tree().get_first_node_in_group(&"mine_audio")!=null:
+		return
 	# Weapon-specific swooshes follow accepted attacks; the ledger stays independent.
 	if id == &"light_blade": return
 	var definition := AbilityCatalog.definition(id)

@@ -26,3 +26,8 @@ static func diamond(canvas: CanvasItem, center: Vector2, radius: float, tint: Co
 		center + Vector2(0, -radius), center + Vector2(radius * 0.65, 0),
 		center + Vector2(0, radius), center + Vector2(-radius * 0.65, 0),
 	]), tint)
+
+
+static func draw_text(canvas: CanvasItem, font: Font, point: Vector2, text: String, font_size: int) -> void:
+	canvas.draw_string_outline(font,point,text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size,3,Color.BLACK)
+	canvas.draw_string(font,point,text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size,Color.WHITE)

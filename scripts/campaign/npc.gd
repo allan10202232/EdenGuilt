@@ -15,7 +15,7 @@ func _ready() -> void:
 	_prompt=Label.new()
 	_prompt.theme=preload("res://assets/ui_theme.tres")
 	_prompt.add_theme_font_size_override(&"font_size",14)
-	_prompt.add_theme_color_override(&"font_outline_color",Color(0.02,0.03,0.02))
+	_prompt.add_theme_color_override(&"font_outline_color",Color.BLACK)
 	_prompt.add_theme_constant_override(&"outline_size",4)
 	_prompt.position=Vector2(-70,-83)
 	add_child(_prompt)
@@ -23,7 +23,7 @@ func _ready() -> void:
 	_refresh()
 
 func _refresh() -> void:
-	_prompt.text=GameText.t("T · 交谈")
+	_prompt.text=GameText.t("交谈")
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(player): return
@@ -40,10 +40,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func conversation() -> Dictionary:
 	if WorldProgress.returning:
-		return {"speaker":GameText.t("同行的居民"),"lines":[GameText.t("我们会一起修好回家的路。力量可以交还，你不必独自承担。"),GameText.t("回到每处能力源按 R。累计碳账本不会清零，但大地可以重新生长。")]}
+		return {"speaker":GameText.t("同行的居民"),"lines":[GameText.t("我们会一起修好回家的路。力量可以交还，你不必独自承担。"),GameText.t("回到每处绿洲与居民共同修复。累计碳账本不会清零，但大地可以重新生长。")]}
 	match region:
 		&"lone_tree":
-			return {"speaker":GameText.t("莫斯 · 拾荒者"),"lines":[GameText.t("你醒在垃圾场。城里丢下的东西，最终都会来到这里。"),GameText.t("地面的余绿还能回应提取器。在前方能力源按 E，让它们汇聚，学会二段跳。"),GameText.t("空格起跳，在空中再按一次可越过断崖。每次二段跳会留下 5 kg 的模拟碳排放。"),GameText.t("向右穿过矿洞，你会看到 Eden City。别只相信城墙内的春天。")]}
+			return {"speaker":GameText.t("莫斯 · 拾荒者"),"lines":[GameText.t("你醒在垃圾场。城里丢下的东西，最终都会来到这里。"),GameText.t("地面的余绿还能回应提取器。前方绿洲的生命能够汇聚，赋予你二段跳。"),GameText.t("二段跳能帮你越过断崖，但每次都会留下 5 kg 的模拟碳排放。"),GameText.t("向右穿过矿洞，你会看到 Eden City。别只相信城墙内的春天。")]}
 		&"grassland":
-			return {"speaker":GameText.t("艾拉 · 矿工"),"lines":[GameText.t("矿洞的毒素来自伊甸城的废气。碰到浓雾会中毒，离开毒雾后会慢慢恢复。"),GameText.t("先在能力源按 E 学习碳矿化，再按 C 固化节点。每次成功施法记 1 kg。"),GameText.t("石刻给出了次序：I 晶桥，II 上游喷口，III 下游喷口。先接通晶桥，再依次封住两处毒源。"),GameText.t("三个封印全部固定，出口的净化门才会打开。走错顺序不会消耗碳排放。")]}
-	return {"speaker":GameText.t("赛恩 · 守档人"),"lines":[GameText.t("欢迎来到 Eden City。这里的绿色并没有消除污染，只是把它送到了别人看不见的地方。"),GameText.t("城内有两处能力源。学习护盾后用 Q 防御，学习黑穿后用 F 穿过紫色暗壁。"),GameText.t("击败能源守卫，进入右侧档案。是否公开真相，由你决定。")]}
+			return {"speaker":GameText.t("艾拉 · 矿工"),"lines":[GameText.t("矿洞的毒素来自伊甸城的废气。碰到浓雾会中毒，离开毒雾后会慢慢恢复。"),GameText.t("先从绿洲获得碳矿化，再固化节点。每次成功施法记 1 kg。"),GameText.t("石刻给出了次序：I 晶桥，II 上游喷口，III 下游喷口。先接通晶桥，再依次封住两处毒源。"),GameText.t("三个封印全部固定，出口的净化门才会打开。走错顺序不会消耗碳排放。")]}
+	return {"speaker":GameText.t("赛恩 · 守档人"),"lines":[GameText.t("欢迎来到 Eden City。这里的绿色并没有消除污染，只是把它送到了别人看不见的地方。"),GameText.t("城内有两处绿洲，分别赋予护盾和黑穿。黑穿能够穿过紫色暗壁。"),GameText.t("击败能源守卫，进入右侧档案。是否公开真相，由你决定。")]}

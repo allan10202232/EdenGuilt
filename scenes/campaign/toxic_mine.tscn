@@ -1,6 +1,5 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="PackedScene" path="res://scenes/campaign/junkyard_start.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/mine_challenge/toxic_mine_challenge.tscn" id="1"]
 
 [node name="ToxicMine" instance=ExtResource("1")]
-region_id = &"grassland"

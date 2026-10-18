@@ -49,14 +49,20 @@ func _run() -> void:
 	await _ticks(4)
 	_check(WorldProgress.can_play() and not app._dialogue.visible,"Escape closes NPC conversation and restores play")
 	await _key(KEY_T)
+	_check(app._dialogue._index==0 and app._dialogue._body.visible_characters==-1,"opening T shows the entire first subtitle without skipping it")
 	for index in 3:
-		app._dialogue._body.visible_characters=-1
-		app._dialogue.advance()
-	app._dialogue._body.visible_characters=-1
-	app._dialogue._reveal=10000
-	await _key(KEY_SPACE)
+		await _key(KEY_T)
+		_check(app._dialogue._index==index+1 and app._dialogue.visible,"each T advances exactly one subtitle")
+	var echo:=InputEventKey.new()
+	echo.keycode=KEY_T
+	echo.pressed=true
+	echo.echo=true
+	Input.parse_input_event(echo)
+	await _ticks(2)
+	_check(app._dialogue._index==3,"holding T does not skip subtitles")
+	await _key(KEY_T)
 	await _ticks(4)
-	_check(WorldProgress.can_play() and _player().is_on_floor() and _player().velocity.y>=0,"final Space confirmation closes dialogue without an accidental jump")
+	_check(WorldProgress.can_play() and not app._dialogue.visible and _player().is_on_floor(),"final T closes subtitles without reopening the conversation")
 	await _place(Vector2(420,596))
 	await _action(&"eden_absorb",false)
 	_check(WorldProgress.extraction_active and not WorldProgress.has_ability(&"double_jump"),"skill is not granted before extraction completes")
@@ -72,49 +78,23 @@ func _run() -> void:
 	_check(not WorldProgress.extraction_active and WorldProgress.narrative_kind==&"" and CarbonLedger.gross_kg==0,"revisiting a learned source cannot replay or bill learning")
 	WorldProgress.enter_scene(&"grassland",Vector2(140,596))
 	await _ticks(10)
-	_check(_level().definition.title=="Toxic Mine Pit" and _level().npc.conversation().lines[2].contains("I Crystal"),"cavern NPC provides the seal sequence")
-	for enemy in _level().enemies: enemy.set_physics_process(false)
-	await _place(Vector2(530,596))
-	await _action(&"eden_absorb")
-	_check(WorldProgress.has_ability(&"mineralization"),"cavern gathering unlocks Mineralization")
-	await _place(Vector2(2010,596))
-	before=CarbonLedger.gross_kg
-	await _action(&"eden_mineralize")
-	_check(CarbonLedger.gross_kg==before and not WorldProgress.is_collected(&"grassland/mineral_2"),"wrong seal order is rejected without emissions")
-	await _place(Vector2(3990,450))
-	_check(WorldProgress.current_scene==&"grassland" and not _level().mine_puzzle_solved(),"unresolved toxin puzzle blocks the level exit")
-	await _place(Vector2(1825,596))
-	_level().hazards[0]._clock=2.25
-	await _ticks(20)
-	_check(_level().toxin>0,"active cave fog builds a real toxin burden")
-	await _capture("story-06-cavern-toxin")
-	await _place(Vector2(1710,596))
-	await _ticks(70)
-	_check(is_zero_approx(_level().toxin),"leaving toxic fog clears toxin burden")
-	var health_before_toxin:=GameSession.health
-	_level().toxin=80.0
-	_level()._toxin_tick=1.0
-	_player()._invulnerability=0.0
-	await _ticks(2)
-	_check(GameSession.health==health_before_toxin-10,"high toxin uses the new half-orb damage rule without an invalid hurt call")
-	_level().toxin=0.0
-	_player().stats.heal(10)
-	for index in 3:
-		await _place(_level().definition.mineral_nodes[index].point+Vector2(0,6))
-		_player()._mineral_recovery=0
-		await _action(&"eden_mineralize")
-		_check(WorldProgress.is_collected(StringName("grassland/mineral_%d"%index)),"seal %d is fixed by a real C input"%(index+1))
-	_check(_level().mine_puzzle_solved() and _level().hazards[0].neutralized and _level().hazards[1].neutralized,"three seals neutralize both toxin sources and open the gate")
-	_check(CarbonLedger.gross_kg==3 and CarbonLedger.stored_kg==45,"three accepted casts record 3 kg and separate 45 kg storage")
-	await _capture("story-07-puzzle-solved")
-	GameSession.player_died()
-	await _ticks(3)
-	await _click(app._result.get_node("%CheckpointButton"))
-	await _ticks(10)
-	_check(_level().mine_puzzle_solved() and CarbonLedger.gross_kg==3,"checkpoint retains solved seals and permanent ledger")
-	await _place(Vector2(3990,450))
+	_check(_level().vents.size()==25 and WorldProgress.has_ability(&"mineralization"),"new mine loads its gas-mineralization challenge")
+	_check(not app._hud.visible,"mine uses its own stage and sequestration HUD")
+	# The full input-driven eight-stage route is tested in mine_challenge_test.
+	# Here we isolate story handoff, bilingual dialogue and the chapter summary.
+	await _place(Vector2(280,1778))
+	await _key(KEY_T)
+	_check(app._dialogue.visible and app._dialogue._body.text.contains("carbon"),"mine resident explains carbon mineralization in subtitles")
+	await _key(KEY_ESCAPE)
+	for stage in range(2,6): _level().activate_stage(stage)
+	_level().lever.active=true
+	_level()._redirect_gas(true)
+	for stage in range(6,9): _level().activate_stage(stage)
+	await _place(Vector2(5440,378))
+	_check(_level()._cleared and WorldProgress.narrative_kind==&"mine_clear","mine exit presents chapter-clear summary")
+	_level().continue_to_eden()
 	await _ticks(8)
-	_check(WorldProgress.current_scene==&"remnant_sea" and _level().name=="EdenCity","solved cavern enters the distinct Eden City scene")
+	_check(WorldProgress.current_scene==&"remnant_sea" and _level().name=="EdenCity","mine summary enters Eden City")
 	await _capture("story-08-eden-city")
 	await _place(Vector2(420,596))
 	await _action(&"eden_absorb")
@@ -147,7 +127,7 @@ func _run() -> void:
 	print("STORY: %d checks, %d failures"%[checks,failures])
 	get_tree().quit(0 if failures==0 else 1)
 
-func _level() -> CampaignLevel:
+func _level() -> Node2D:
 	return app.get_node("LevelRoot").get_child(0)
 func _player() -> CharacterBody2D:
 	return _level().player

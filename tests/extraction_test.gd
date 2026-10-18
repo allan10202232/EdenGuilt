@@ -20,6 +20,8 @@ func _ready() -> void:
 func _run() -> void:
 	GameText.set_language("en", false)
 	_app = preload("res://scenes/main.tscn").instantiate()
+	# Original controller / oasis fixture; production mine has its own route test.
+	_app.mine_scene=preload("res://tests/fixtures/legacy_mineralization_room.tscn")
 	add_child(_app)
 	WorldProgress.ability_absorbed.connect(func(id: StringName) -> void: _absorbed[id] = int(_absorbed.get(id, 0)) + 1)
 	GameSession.start_run()
@@ -92,7 +94,7 @@ func _extract_case(region: StringName, ability: StringName, label: String) -> vo
 	await _capture("extraction-" + label + "-before")
 	var initial_filter := _level().ecology.amount
 	_check(is_equal_approx(initial_filter,0.5 if ability==&"black_pierce" else 0.0), label + " starts with only its own previously depleted sources")
-	var before_color := _world_saturation() if _screenshots else 0.0
+	var before_color := _world_color() if _screenshots else Vector3.ZERO
 	var before_hud := _hud_pixel() if _screenshots else Color.BLACK
 	await _tap(&"eden_absorb")
 	_check(WorldProgress.extraction_active and not WorldProgress.has_ability(ability), label + " E starts the action before granting a skill")
@@ -130,7 +132,7 @@ func _extract_case(region: StringName, ability: StringName, label: String) -> vo
 		GameText.set_language("en", false)
 	await _capture("extraction-" + label + "-kneel")
 	await _physics(64)
-	_check(_level().ecology.amount > middle_filter + 0.05, label + " world desaturation continues as the extractor charges")
+	_check(_level().ecology.amount > middle_filter + 0.05, label + " pollution tint continues as the extractor charges")
 	_check(_player()._art.extraction_sprite.frame in [3, 4] and oasis.vitality < 0.5, label + " raises the charging device as the oasis withers")
 	await _capture("extraction-" + label + "-channel")
 	await _wait_extraction()
@@ -148,7 +150,8 @@ func _extract_case(region: StringName, ability: StringName, label: String) -> vo
 	_check(not WorldProgress.extraction_active and int(_absorbed.get(ability, 0)) == 1, label + " spent land cannot be extracted twice")
 	await _capture("extraction-" + label + "-after")
 	if _screenshots:
-		_check(_world_saturation() < before_color - 0.015, label + " real rendered background loses color after extraction")
+		_check(_world_color().distance_to(before_color) > 0.003, label + " real rendered background gains pollution tint after extraction")
+		_check(_world_color().dot(Vector3(0.299,0.587,0.114)) >= before_color.dot(Vector3(0.299,0.587,0.114))*0.90, label + " pollution preserves background exposure")
 		_check(_hud_pixel().is_equal_approx(before_hud), label + " world filter leaves HUD colors unchanged")
 
 
@@ -198,20 +201,20 @@ func _capture(label: String) -> void:
 	_check(get_viewport().get_texture().get_image().save_png("res://test-output/screenshots/%s.png" % label) == OK, "capture " + label)
 
 
-func _world_saturation() -> float:
+func _world_color() -> Vector3:
 	var picture := get_viewport().get_texture().get_image()
-	var total := 0.0
+	var total := Vector3.ZERO
 	var count := 0
 	for y in range(135,305,8):
 		for x in range(450,730,8):
 			var pixel := picture.get_pixel(x,y)
-			total += maxf(pixel.r,maxf(pixel.g,pixel.b)) - minf(pixel.r,minf(pixel.g,pixel.b))
+			total += Vector3(pixel.r,pixel.g,pixel.b)
 			count += 1
 	return total / count
 
 
 func _hud_pixel() -> Color:
-	return get_viewport().get_texture().get_image().get_pixel(116,68)
+	return get_viewport().get_texture().get_image().get_pixel(40,40)
 
 
 func _check(ok: bool, label: String) -> void:

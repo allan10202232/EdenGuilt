@@ -17,6 +17,8 @@ func _ready() -> void:
 func _run() -> void:
 	GameText.set_language("zh_CN",false)
 	_app=preload("res://scenes/main.tscn").instantiate()
+	# Original controller / oasis fixture; production mine has its own route test.
+	_app.mine_scene=preload("res://tests/fixtures/legacy_mineralization_room.tscn")
 	add_child(_app)
 	await _frames(4)
 	await _capture("carbon-00-menu")

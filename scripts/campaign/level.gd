@@ -119,9 +119,9 @@ func _ready() -> void:
 	_add_region_signs()
 	for index in definition.mineral_nodes.size():
 		var node: Dictionary=definition.mineral_nodes[index]
-		_label(node.point+Vector2(-55,-80),GameText.t("%s · C 固化毒雾")%[["I","II","III"][index]],14,Color(0.7,0.9,0.48))
+		_label(node.point+Vector2(-55,-80),GameText.t("封印 %s")%[["I","II","III"][index]],14,Color(0.7,0.9,0.48))
 	if region_id==&"lone_tree":
-		_label(Vector2(80,535),GameText.t("A/D 移动 · 空格跳跃\n灯火：检查点"),13)
+		_label(Vector2(80,535),GameText.t("灯火：检查点"),13)
 	var exit_label:=_label(exit_point+Vector2(-110,-115),GameText.t("真相档案 →") if region_id==&"remnant_sea" else GameText.t("下一关 →"),17)
 	if region_id==&"remnant_sea":
 		exit_label.name="RescueLabel"
@@ -148,7 +148,7 @@ func _process(delta: float) -> void:
 	# Camera movement and resizing must redraw the panorama even during dialogue.
 	queue_redraw()
 	for signpost in _signs:
-		signpost.label.visible=not WorldProgress.narrative_active and not WorldProgress.extraction_active and _clock<10.0
+		signpost.label.visible=signpost.kind==1 and not WorldProgress.narrative_active and not WorldProgress.extraction_active and _clock<5.0
 	if not WorldProgress.can_play():
 		return
 	_clock+=delta
@@ -269,16 +269,16 @@ func _spawn_projectile(origin: Vector2,direction: float) -> void:
 func _refresh_world() -> void:
 	var ability: StringName=definition.ability
 	var status:=WorldProgress.ability_state(ability)
-	var learned_hint: String=GameText.t("R 与居民修复并卸下") if WorldProgress.core_reversed else GameText.t("已学会 · 向右寻找真相")
-	_source_label.text=GameText.t("%s · 生命绿洲\n%s")%[AbilityCatalog.definition(ability).name,[GameText.t("E  用吸魂器抽取"),learned_hint,GameText.t("共同修复 · 通路已恢复")][status]]
-	_source_label.modulate=definition.accent
+	var learned_hint: String=GameText.t("与居民共同修复") if WorldProgress.core_reversed else GameText.t("已学会 · 向右寻找真相")
+	_source_label.text=GameText.t("%s · 生命绿洲\n%s")%[AbilityCatalog.definition(ability).name,[GameText.t("生命尚存"),learned_hint,GameText.t("共同修复 · 通路已恢复")][status]]
+	_source_label.modulate=Color.WHITE
 	for oasis: CampaignOasis in oases.values():
 		if not extraction.active or extraction._oasis != oasis:
 			oasis.refresh_state()
 	if _secondary_label!=null:
 		var second_status:=WorldProgress.ability_state(definition.secondary_ability)
-		var second_hint: String=GameText.t("R 卸下黑穿") if WorldProgress.core_reversed else GameText.t("F 可用 · 向右探索")
-		_secondary_label.text=GameText.t("黑穿 · 生命绿洲\n%s")%[GameText.t("E 抽取 / F 释放"),second_hint,GameText.t("共同修复 · 暗壁已拆除")][second_status]
+		var second_hint: String=GameText.t("与居民共同修复") if WorldProgress.core_reversed else GameText.t("已学会 · 向右寻找真相")
+		_secondary_label.text=GameText.t("黑穿 · 生命绿洲\n%s")%[GameText.t("生命尚存"),second_hint,GameText.t("共同修复 · 暗壁已拆除")][second_status]
 	var unlocked:=WorldProgress.has_ability(ability) or WorldProgress.route_open(ability)
 	_gate.get_child(0).set_deferred(&"disabled",unlocked)
 	if (WorldProgress.route_open(ability) or WorldProgress.repaired_regions.has(region_id)) and not _route_ready:
@@ -348,7 +348,9 @@ func try_mineralize(origin: Vector2,facing: float) -> bool:
 			_install_mineral(index)
 			WorldProgress.report_ability_used(&"mineralization")
 			CarbonLedger.store_carbon(id,CarbonLedger.rules.mineral_node_storage_kg)
-			WorldProgress.set_notice(GameText.t("碳矿化 +1 kg；本节点固定 %.0f kg CO₂（游戏模型），晶桥已生成。")%CarbonLedger.rules.mineral_node_storage_kg)
+			WorldProgress.world_changed.emit()
+			if not mine_puzzle_solved():
+				WorldProgress.set_notice(GameText.t("碳矿化 +1 kg；本节点固定 %.0f kg CO₂（游戏模型），晶桥已生成。")%CarbonLedger.rules.mineral_node_storage_kg)
 			return true
 	var rect:=Rect2(origin+Vector2(facing*105.0-64.0,70),Vector2(128,18))
 	var query:=PhysicsShapeQueryParameters2D.new()
@@ -421,15 +423,15 @@ func _area(rect: Rect2,label: String) -> Area2D:
 	return area
 
 
-func _label(point: Vector2,text: String,size: int,tint: Color=Color(0.85,0.85,0.74)) -> Label:
+func _label(point: Vector2,text: String,size: int,_tint: Color=Color(0.85,0.85,0.74)) -> Label:
 	var label:=Label.new()
 	label.position=point
 	label.text=text
 	label.theme=preload("res://assets/ui_theme.tres")
 	label.add_theme_font_size_override(&"font_size",size)
 	label.add_theme_constant_override(&"outline_size",4)
-	label.add_theme_color_override(&"font_outline_color",Color(0.025,0.04,0.045,0.85))
-	label.modulate=tint
+	label.add_theme_color_override(&"font_outline_color",Color.BLACK)
+	label.modulate=Color.WHITE
 	label.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	add_child(label)
 	return label

@@ -38,6 +38,7 @@ var _defeated: Dictionary = {}
 var _collected: Dictionary = {}
 var _checkpoint: Dictionary = {}
 var _light_blade_escape_ready: bool = false
+var mine_challenge: Dictionary = {}
 
 
 func _ready() -> void:
@@ -63,6 +64,7 @@ func reset_run() -> void:
 	_defeated.clear()
 	_collected.clear()
 	_light_blade_escape_ready = false
+	mine_challenge.clear()
 	for id in AbilityCatalog.IDS:
 		_abilities[id] = AbilityState.UNAVAILABLE
 	for region in AbilityCatalog.REGIONS:

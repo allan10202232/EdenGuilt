@@ -11,6 +11,9 @@ func _ready() -> void:
 func _run() -> void:
 	GameText.set_language("zh_CN",false)
 	app=preload("res://scenes/main.tscn").instantiate()
+	# Preserve the original controller / three-seal regression fixture.
+	# The production eight-stage mine is covered by mine_challenge_test.
+	app.mine_scene=preload("res://tests/fixtures/legacy_mineralization_room.tscn")
 	add_child(app)
 	await _physics(4)
 	GameSession.start_run()

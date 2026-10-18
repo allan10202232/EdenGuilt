@@ -71,6 +71,22 @@ try {
     if ($Screenshots) { $storyArguments += @('--', '--screenshots') }
     Invoke-GodotCheck -EngineArguments $storyArguments -LogPath $storyLog -Summary 'STORY'
     Write-Host "Bilingual NPCs, learning and toxin puzzle passed. Log: $storyLog"
+    $uiLog = Join-Path $outputDirectory 'ui-refresh.log'
+    $uiArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $uiLog)
+    if (-not $Screenshots) { $uiArguments += '--headless' }
+    $uiArguments += 'res://tests/ui_refresh_test.tscn'
+    Invoke-GodotCheck -EngineArguments $uiArguments -LogPath $uiLog -Summary 'UI REFRESH'
+    Write-Host "Compact HUD, settings and first-use tutorials passed. Log: $uiLog"
+
+    foreach ($mineSuite in @(@('mine_mechanics_test', 'MINE MECHANICS'), @('mine_challenge_test', 'MINE CHALLENGE'), @('mine_polish_test', 'MINE POLISH'))) {
+        $mineLog = Join-Path $outputDirectory ($mineSuite[0] + '.log')
+        $mineArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $mineLog)
+        if (-not $Screenshots) { $mineArguments += '--headless' }
+        $mineArguments += ('res://tests/' + $mineSuite[0] + '.tscn')
+        Invoke-GodotCheck -EngineArguments $mineArguments -LogPath $mineLog -Summary $mineSuite[1]
+    }
+    Write-Host 'Eight-stage mine mechanics, normal-input route and return journey passed.'
+
     $openingLog = Join-Path $outputDirectory $(if ($Screenshots) { 'opening-visual.log' } else { 'opening-headless.log' })
     $openingArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $openingLog)
     if ($Screenshots) {

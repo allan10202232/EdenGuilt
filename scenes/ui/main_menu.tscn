@@ -65,13 +65,13 @@ theme_override_constants/separation = 20
 
 [node name="Eyebrow" type="Label" parent="Margin/Columns/Identity"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.74, 0.59, 0.36, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 text = "E D E N G U I L T    ·    遗 庭"
 
 [node name="Title" type="Label" parent="Margin/Columns/Identity"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 64
-theme_override_colors/font_color = Color(0.92, 0.83, 0.64, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_shadow_color = Color(0.1, 0.04, 0.02, 1)
 theme_override_constants/shadow_offset_y = 4
 text = "伊甸之罪"
@@ -82,13 +82,13 @@ layout_mode = 2
 [node name="Description" type="Label" parent="Margin/Columns/Identity"]
 layout_mode = 2
 text = "你获得的每一份力量，都留下一笔账。\n伊甸城的春天，究竟由谁承担？\n\n垃圾场  /  毒雾矿洞  /  伊甸城"
-theme_override_colors/font_color = Color(0.78, 0.72, 0.59, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_constants/line_spacing = 10
 
 [node name="Build" type="Label" parent="Margin/Columns/Identity"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(0.63, 0.58, 0.44, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 text = "力量终有代价，归途仍待有人同行。\n三幕旅途  ·  两种抉择  ·  一份留给世界的账本"
 
 [node name="Panel" type="PanelContainer" parent="Margin/Columns"]
@@ -136,5 +136,5 @@ text = "A/D 移动 · 空格跳跃 · Shift 快跑\n左键短砍 / 右键长砍\
 [node name="Note" type="Label" parent="Margin/Columns/Panel/Actions"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(0.63, 0.58, 0.46, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 text = "可用 Tab 切换按钮，Enter 确认"

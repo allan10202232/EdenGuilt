@@ -1,10 +1,19 @@
-[gd_resource type="Theme" load_steps=9 format=3]
+[gd_resource type="Theme" load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/gothic_frame.gd" id="1"]
 
+[sub_resource type="SystemFont" id="SymbolFont"]
+font_names = PackedStringArray("Segoe UI Symbol", "DejaVu Sans", "Arial")
+font_weight = 400
+
+[sub_resource type="SystemFont" id="CJKFont"]
+font_names = PackedStringArray("Microsoft YaHei", "Noto Sans CJK SC", "SimSun")
+font_weight = 400
+
 [sub_resource type="SystemFont" id="Font"]
-font_names = PackedStringArray("Georgia", "SimSun", "Noto Serif CJK SC", "Microsoft YaHei", "serif")
-font_weight = 500
+font_names = PackedStringArray("Andale Mono", "Consolas", "Courier New", "monospace")
+font_weight = 400
+fallbacks = Array[Font]([SubResource("CJKFont"), SubResource("SymbolFont")])
 
 [sub_resource type="StyleBox" id="Panel"]
 script = ExtResource("1")
@@ -57,17 +66,17 @@ border_color = Color(0.82, 0.4, 0.26, 1)
 [resource]
 default_font = SubResource("Font")
 default_font_size = 18
-Button/colors/font_color = Color(0.9, 0.84, 0.7, 1)
-Button/colors/font_hover_color = Color(1, 0.93, 0.75, 1)
-Button/colors/font_focus_color = Color(1, 0.93, 0.75, 1)
-Button/colors/font_pressed_color = Color(0.96, 0.87, 0.66, 1)
+Button/colors/font_color = Color(1, 1, 1, 1)
+Button/colors/font_hover_color = Color(1, 1, 1, 1)
+Button/colors/font_focus_color = Color(1, 1, 1, 1)
+Button/colors/font_pressed_color = Color(1, 1, 1, 1)
 Button/colors/font_disabled_color = Color(0.45, 0.4, 0.31, 1)
 Button/styles/normal = SubResource("Button")
 Button/styles/hover = SubResource("Hover")
 Button/styles/pressed = SubResource("Hover")
 Button/styles/disabled = SubResource("Button")
 Button/styles/focus = SubResource("Focus")
-Label/colors/font_color = Color(0.9, 0.84, 0.7, 1)
+Label/colors/font_color = Color(1, 1, 1, 1)
 Panel/styles/panel = SubResource("Panel")
 PanelContainer/styles/panel = SubResource("Panel")
 ProgressBar/styles/background = SubResource("BarBackground")
@@ -77,7 +86,22 @@ OptionButton/styles/normal = SubResource("Button")
 OptionButton/styles/hover = SubResource("Hover")
 OptionButton/styles/pressed = SubResource("Hover")
 OptionButton/styles/focus = SubResource("Focus")
-OptionButton/colors/font_color = Color(0.9, 0.84, 0.7, 1)
+OptionButton/colors/font_color = Color(1, 1, 1, 1)
 PopupMenu/styles/panel = SubResource("Panel")
 
 OptionButton/styles/disabled = SubResource("Button")
+
+; High-contrast text across both locales and all UI states.
+Label/colors/font_outline_color = Color(0, 0, 0, 1)
+Label/constants/outline_size = 3
+Button/colors/font_outline_color = Color(0, 0, 0, 1)
+Button/constants/outline_size = 3
+OptionButton/colors/font_outline_color = Color(0, 0, 0, 1)
+OptionButton/constants/outline_size = 3
+PopupMenu/colors/font_outline_color = Color(0, 0, 0, 1)
+PopupMenu/constants/outline_size = 3
+PopupMenu/colors/font_color = Color(1, 1, 1, 1)
+PopupMenu/colors/font_hover_color = Color(1, 1, 1, 1)
+RichTextLabel/colors/default_color = Color(1, 1, 1, 1)
+RichTextLabel/colors/font_outline_color = Color(0, 0, 0, 1)
+RichTextLabel/constants/outline_size = 3

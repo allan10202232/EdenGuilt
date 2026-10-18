@@ -6,6 +6,7 @@ const CAMPAIGN_SCENES: Dictionary = {
 	&"grassland": preload("res://scenes/campaign/toxic_mine.tscn"),
 	&"remnant_sea": preload("res://scenes/campaign/eden_city.tscn"),
 }
+@export var mine_scene: PackedScene = preload("res://scenes/campaign/toxic_mine.tscn")
 @export var level_scene: PackedScene = preload("res://scenes/placeholder_level.tscn")
 @export var region_scenes: Dictionary[StringName, PackedScene] = {
 	&"grassland": preload("res://scenes/grassland.tscn"),
@@ -98,9 +99,11 @@ func _load_level() -> void:
 	_clear_level()
 	var packed: PackedScene = region_scenes.get(WorldProgress.current_scene, level_scene)
 	if campaign_mode:
-		packed = CAMPAIGN_SCENES[WorldProgress.current_scene]
+		packed = mine_scene if WorldProgress.current_scene==&"grassland" else CAMPAIGN_SCENES[WorldProgress.current_scene]
 	WorldProgress.finish_scene_load()
-	_level_root.add_child(packed.instantiate())
+	var active_level := packed.instantiate()
+	_level_root.add_child(active_level)
+	_hud.visible = not active_level.get_meta(&"custom_hud",false)
 	var focus := get_viewport().gui_get_focus_owner()
 	if focus != null:
 		focus.release_focus()

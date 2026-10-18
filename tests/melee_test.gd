@@ -181,10 +181,11 @@ func _test_menu_navigation() -> void:
 	var main := get_tree().current_scene
 	_check(main != null and main.name == "Main", "main scene opens after training")
 	var menu: Control = main.get_node("UI/Root/MainMenu")
-	await _click(menu.get_node("%CombatDemoButton").get_global_rect().get_center(), MOUSE_BUTTON_LEFT)
+	_check(not menu.get_node("%CombatDemoButton").visible,"simplified main menu hides the developer training shortcut")
+	get_tree().change_scene_to_file("res://scenes/combat/melee_demo.tscn")
 	await _physics(4)
 	var training := get_tree().current_scene
-	_check(training != null and training.name == "MeleeDemo", "main menu button opens actual melee test room")
+	_check(training != null and training.name == "MeleeDemo", "standalone training scene opens through SceneTree navigation")
 	await _click(training.get_node("%MenuButton").get_global_rect().get_center(), MOUSE_BUTTON_LEFT)
 	await _physics(4)
 	main = get_tree().current_scene

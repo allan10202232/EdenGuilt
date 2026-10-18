@@ -179,3 +179,7 @@ HUD 持续显示当前目标；居民共建后的危险区解除，守卫在入�
 `CarbonLedger = res://autoload/carbon_ledger.gd` 且已启用。四个系统的注册均保存在根目录 `project.godot`。
 编辑器已打开时，外部修改此文件应选择 **Reload from disk**，保留新的工程配置。
 验收脚本会在启动前检查四项注册与脚本路径，缺失时直接报明原因。
+
+## Toxic Mine Challenge / 第二关
+
+Open `scenes/mine_challenge/toxic_mine_challenge.tscn` and press F6 to test the new eight-stage mine directly. E / J mineralizes gas; Space double jumps. The campaign loads it after the Junkyard. See [level documentation](docs/toxic-mine-challenge.md).
