@@ -31,10 +31,6 @@ func _ready() -> void:
 	_add_platform(Rect2(2640, 0, 30, 840))
 	for rect in HAZARDS:
 		_hazard_areas.append(_add_area(rect, "Hazard"))
-	var pickups := [Vector2(380, 470), Vector2(700, 390), Vector2(1175, 470),
-		Vector2(1515, 390), Vector2(2145, 465), Vector2(2380, 370)]
-	for index in pickups.size():
-		_add_pickup(pickups[index], index)
 	var exit := _add_area(Rect2(2510, 520, 60, 100), "Exit")
 	exit.body_entered.connect(_on_exit_entered)
 	var entrance := _add_area(Rect2(25, 520, 35, 100), "Entrance")
@@ -97,30 +93,6 @@ func _add_area(rect: Rect2, area_name: String) -> Area2D:
 	area.add_child(collision)
 	add_child(area)
 	return area
-
-
-func _add_pickup(point: Vector2, index: int) -> void:
-	if WorldProgress.is_collected(_entity_id("shard_%d" % index)):
-		return
-	var area := _add_area(Rect2(point - Vector2(15, 15), Vector2(30, 30)), "Shard%d" % index)
-	area.set_meta(&"persistent_id", _entity_id("shard_%d" % index))
-	var gem := Polygon2D.new()
-	gem.polygon = PackedVector2Array([Vector2(0, -15), Vector2(10, 0), Vector2(0, 15), Vector2(-10, 0)])
-	gem.color = Color(0.91, 0.74, 0.4)
-	area.add_child(gem)
-	area.body_entered.connect(_on_pickup_entered.bind(area))
-
-
-func _on_pickup_entered(body: Node2D, area: Area2D) -> void:
-	if body != player or area.has_meta(&"collected") or not WorldProgress.can_play():
-		return
-	if not WorldProgress.collect_once(area.get_meta(&"persistent_id")):
-		return
-	area.set_meta(&"collected", true)
-	area.hide()
-	player.stats.add_score(100)
-	SoundManager.play_sfx(&"pickup", -6.0)
-	area.queue_free()
 
 
 func _on_exit_entered(body: Node2D) -> void:

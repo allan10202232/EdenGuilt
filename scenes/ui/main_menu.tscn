@@ -131,7 +131,7 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 15
 theme_override_constants/line_spacing = 8
 autowrap_mode = 2
-text = "A/D 移动 · 空格跳跃 · Shift 快跑\n左键短砍 / 右键长砍\nE 学习 · C 矿化 · Q 护盾 · F 黑穿\nT 交谈 · V 拆解 · R 修复 / 卸下\n精准节奏提高能效，连发积累废热\n寻找真相，选择结局 A / B"
+text = "A/D 移动 · 空格跳跃 · Shift 快跑\n左键短砍 / 右键长砍\nE 学习 · C 矿化 · Q 护盾 · F 黑穿\nT 交谈 · R 修复 / 卸下\n精准节奏提高能效，连发积累废热\n寻找真相，选择结局 A / B"
 
 [node name="Note" type="Label" parent="Margin/Columns/Panel/Actions"]
 layout_mode = 2

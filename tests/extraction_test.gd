@@ -33,6 +33,7 @@ func _run() -> void:
 	GameSession.resume_checkpoint()
 	await _physics(10)
 	_check(_level().oases[&"double_jump"].vitality == 0.0 and WorldProgress.has_ability(&"double_jump"), "checkpoint reload preserves the depleted oasis and acquired skill")
+	_check(is_equal_approx(_level().ecology.amount,1.0), "checkpoint reload immediately restores the completed scene filter")
 	await _extract_case(&"grassland", &"mineralization", "02-mine")
 	await _extract_case(&"remnant_sea", &"shield", "03-eden-shield")
 	_check(_level().oases[&"black_pierce"].vitality == 1.0, "Eden's second oasis stays alive when its first is drained")
@@ -46,6 +47,8 @@ func _run() -> void:
 	await _at_source(&"shield")
 	await _tap(&"eden_return")
 	_check(_level().oases[&"shield"].vitality == 1.0, "returning the other ability restores its own oasis")
+	await _physics(50)
+	_check(is_zero_approx(_level().ecology.amount), "community restoration smoothly clears the world filter")
 	await _capture("extraction-05-restored")
 	GameSession.return_to_menu()
 	await _physics(2)
@@ -54,12 +57,16 @@ func _run() -> void:
 	await _at_source(&"double_jump")
 	await _tap(&"eden_absorb")
 	_check(WorldProgress.extraction_active, "new run can begin a fresh extraction")
+	await _physics(35)
+	_check(_level().ecology.amount > 0.05, "cancel fixture begins while the extraction filter is visibly in progress")
 	GameSession.return_to_menu()
 	await _physics(3)
 	_check(not WorldProgress.extraction_active and not WorldProgress.has_ability(&"double_jump"), "leaving mid-action releases the guard without granting a skill")
+	_check(_app.find_children("SceneEcology","CanvasLayer",true,false).is_empty(), "returning to menu removes the world-only filter")
 	GameSession.start_run()
 	await _physics(10)
 	_check(WorldProgress.can_play() and _level().oases[&"double_jump"].vitality == 1.0, "cancelled extraction leaves the next run playable and its oasis alive")
+	_check(is_zero_approx(_level().ecology.amount), "a cancelled action leaves the next run's scene fully colored")
 	GameSession.return_to_menu()
 	await _physics(3)
 	SoundManager.stop_sfx()
@@ -74,6 +81,8 @@ func _extract_case(region: StringName, ability: StringName, label: String) -> vo
 		await _physics(10)
 	await _at_source(ability)
 	var oasis: CampaignOasis = _level().oases[ability]
+	_check(not _level().definition.has("shards") and not _level().definition.has("recycling") and _level().find_children("Shard*","Area2D",true,false).is_empty(), label + " contains no yellow collectibles or recycling props")
+	_check(not InputMap.has_action(&"eden_recycle"), label + " has no V recycling action")
 	_check(oasis.vitality == 1.0 and not WorldProgress.has_ability(ability), label + " begins with a living oasis")
 	var supported := false
 	for platform: Rect2 in _level().definition.platforms:
@@ -81,6 +90,10 @@ func _extract_case(region: StringName, ability: StringName, label: String) -> vo
 			supported = true
 	_check(supported, label + " oasis is entirely rooted on a solid platform")
 	await _capture("extraction-" + label + "-before")
+	var initial_filter := _level().ecology.amount
+	_check(is_equal_approx(initial_filter,0.5 if ability==&"black_pierce" else 0.0), label + " starts with only its own previously depleted sources")
+	var before_color := _world_saturation() if _screenshots else 0.0
+	var before_hud := _hud_pixel() if _screenshots else Color.BLACK
 	await _tap(&"eden_absorb")
 	_check(WorldProgress.extraction_active and not WorldProgress.has_ability(ability), label + " E starts the action before granting a skill")
 	_check(_player()._art.action == &"extract" and _player()._art.extraction_sprite.visible, label + " uses the new extraction animation")
@@ -104,6 +117,8 @@ func _extract_case(region: StringName, ability: StringName, label: String) -> vo
 	_check(_player().position == position and GameSession.health == health, label + " movement and collision damage cannot interrupt the pose")
 	_check(CarbonLedger.clock_seconds == ledger_time and GameSession.elapsed_seconds == run_time, label + " gameplay clocks pause during the action")
 	await _physics(22)
+	var middle_filter := _level().ecology.amount
+	_check(middle_filter > initial_filter + 0.04 and middle_filter < 1.0, label + " world filter fades progressively during kneeling")
 	_check(_player()._art.extraction_sprite.frame == 2, label + " visibly kneels with the extractor near the ground")
 	if ability == &"double_jump":
 		_check(_level()._source_label.text.contains("Living oasis") and GameText.t(WorldProgress.notice).begins_with("Drawing life"), "new extraction labels and notices follow English selection")
@@ -115,10 +130,14 @@ func _extract_case(region: StringName, ability: StringName, label: String) -> vo
 		GameText.set_language("en", false)
 	await _capture("extraction-" + label + "-kneel")
 	await _physics(64)
+	_check(_level().ecology.amount > middle_filter + 0.05, label + " world desaturation continues as the extractor charges")
 	_check(_player()._art.extraction_sprite.frame in [3, 4] and oasis.vitality < 0.5, label + " raises the charging device as the oasis withers")
 	await _capture("extraction-" + label + "-channel")
 	await _wait_extraction()
 	_check(WorldProgress.has_ability(ability) and oasis.vitality == 0.0, label + " commits the skill and depleted land together")
+	var completed_filter := _level().ecology.amount
+	var expected_filter := 0.5 if ability==&"shield" else 1.0
+	_check(is_equal_approx(completed_filter,expected_filter), label + " completed scene filter persists independently for both Eden sources")
 	_check(int(_absorbed.get(ability, 0)) == 1 and CarbonLedger.gross_kg == emissions, label + " grants exactly once without billing an unused skill")
 	if ability == &"double_jump":
 		_check(GameText.t(WorldProgress.notice).begins_with("Acquired Double Jump."), "completed extraction formats its localized ability name")
@@ -128,6 +147,9 @@ func _extract_case(region: StringName, ability: StringName, label: String) -> vo
 	await _tap(&"eden_absorb")
 	_check(not WorldProgress.extraction_active and int(_absorbed.get(ability, 0)) == 1, label + " spent land cannot be extracted twice")
 	await _capture("extraction-" + label + "-after")
+	if _screenshots:
+		_check(_world_saturation() < before_color - 0.015, label + " real rendered background loses color after extraction")
+		_check(_hud_pixel().is_equal_approx(before_hud), label + " world filter leaves HUD colors unchanged")
 
 
 func _at_source(ability: StringName) -> void:
@@ -174,6 +196,22 @@ func _capture(label: String) -> void:
 	RenderingServer.force_sync()
 	DirAccess.make_dir_recursive_absolute("res://test-output/screenshots")
 	_check(get_viewport().get_texture().get_image().save_png("res://test-output/screenshots/%s.png" % label) == OK, "capture " + label)
+
+
+func _world_saturation() -> float:
+	var picture := get_viewport().get_texture().get_image()
+	var total := 0.0
+	var count := 0
+	for y in range(135,305,8):
+		for x in range(450,730,8):
+			var pixel := picture.get_pixel(x,y)
+			total += maxf(pixel.r,maxf(pixel.g,pixel.b)) - minf(pixel.r,minf(pixel.g,pixel.b))
+			count += 1
+	return total / count
+
+
+func _hud_pixel() -> Color:
+	return get_viewport().get_texture().get_image().get_pixel(116,68)
 
 
 func _check(ok: bool, label: String) -> void:

@@ -29,7 +29,7 @@ func _run() -> void:
 		_check(CampaignLevels.texture(path)!=null,"game asset imported: "+path)
 	await _capture("carbon-01-junkyard")
 	await _teleport(Vector2(350,445))
-	_check(WorldProgress.is_collected(&"lone_tree/shard_0") and GameSession.score==100,"optional upper branch contains real collectible")
+	_check(_level().find_children("Shard*","Area2D",true,false).is_empty() and GameSession.score==0,"upper route has no yellow collectibles or free score")
 	await _source(&"eden_absorb")
 	_check(WorldProgress.has_ability(&"double_jump") and CarbonLedger.gross_kg==0.0,"E learns double jump without charging until used")
 	await _source(&"eden_return")
@@ -43,7 +43,7 @@ func _run() -> void:
 	var attack_carbon:=CarbonLedger.gross_kg
 	_check(not _player().combat.try_reach(1.0) and CarbonLedger.gross_kg==attack_carbon,"shared recovery rejects alternate attack without emission charge")
 	await _physics(18)
-	_check(WorldProgress.is_enemy_defeated(&"lone_tree/mob_0") and GameSession.score==150,"real melee defeats mechanical junkyard enemy and awards score")
+	_check(WorldProgress.is_enemy_defeated(&"lone_tree/mob_0") and GameSession.score==50,"real melee defeats mechanical junkyard enemy and awards score")
 	await _teleport(Vector2(880,596))
 	var before:=CarbonLedger.gross_kg
 	Input.action_press(&"eden_move_right")
@@ -73,10 +73,17 @@ func _run() -> void:
 	_check(GameSession.health==100 and CarbonLedger.gross_kg==before,"checkpoint restores health without carbon rollback")
 	_check(_player().position.distance_to(Vector2(1320,476))<8 and _level().enemies.size()==4,"checkpoint keeps position and defeated enemy history")
 	await _teleport(Vector2(1500,470))
-	await _action(&"eden_recycle")
-	_check(CarbonLedger.recycled_nodes==1,"V circular dismantling records material recovery")
-	await _action(&"eden_recycle")
-	_check(CarbonLedger.recycled_nodes==1,"same scrap cannot be credited twice")
+	_check(not InputMap.has_action(&"eden_recycle"),"V recycling input is no longer registered")
+	var score_before_v:=GameSession.score
+	var press:=InputEventKey.new()
+	press.physical_keycode=KEY_V
+	press.pressed=true
+	get_viewport().push_input(press,true)
+	press=InputEventKey.new()
+	press.physical_keycode=KEY_V
+	get_viewport().push_input(press,true)
+	await _physics(3)
+	_check(GameSession.score==score_before_v and CarbonLedger.recycled_nodes==0,"pressing V at a former recycling point has no effect")
 	await _exit()
 	_check(_level().definition.title=="毒雾矿坑","junkyard exit enters toxic mine")
 	await _source(&"eden_absorb")

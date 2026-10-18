@@ -65,6 +65,5 @@ static func html(result: Dictionary) -> String:
 	return GameText.audit_template()%[
 		title,reflection,data.gross_kg,data.stored_kg,data.efficiency*100.0,
 		(1.0-data.efficiency)*100.0 if data.input_energy>0 else 0.0,svg,stage_rows,skill_rows,
-		data.people,data.restored_regions,data.recycled_nodes,data.recycled_material_kg,data.factors.teaching_ore_ratio,
-		data.teaching_ore_avoided_kg,data.gross_kg,data.gasoline_litres_analogy,
+		data.people,data.restored_regions,data.gross_kg,data.gasoline_litres_analogy,
 		GameText.t(String(data.methodology)).xml_escape(),CarbonLedger.MAX_DETAIL_EVENTS,data.omitted_detail_events,CarbonLedger.EPA_SOURCE,CarbonLedger.DOE_SOURCE]

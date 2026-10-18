@@ -17,6 +17,14 @@ Godot 4.7.2 / GL Compatibility verification:
 
 Commands: `tests/run-tests.ps1 -Godot <Godot console executable>` for the full suite; run `res://tests/extraction_test.tscn` with `--rendering-method gl_compatibility -- --screenshots` for rendered extraction checks. Logs and images are ignored under `test-output/`.
 
+## Scene filter and exploration cleanup — 2026-10-18
+
+Yellow crystal collectibles and V recycling have been removed from the campaign, menu bindings/help, world props and player-facing audit. The geometric integration room also no longer spawns yellow pickups. Enemy defeat scores and mineralization puzzle crystals remain functional.
+
+`SceneEcology` applies a viewport filter on CanvasLayer 2, below climate (5) and UI (10). It follows the actual extraction progress, desaturating and drying the background, terrain and world props together. Junkyard and mine reach full depletion after one extraction; Eden's two sources each contribute half. Completed depletion survives checkpoints and revisits, while community repair eases back to full color. Cancelling via the menu removes the filter and leaves the next run intact. The old material-only, instant bleaching update is removed.
+
+Headless regression: **14 suites, 795 checks, 0 failures**, including **102 extraction checks**; normal-input A/B both finish with **0 deaths**. Rendered extraction: **128 checks, 0 failures**, including measured background desaturation and unchanged HUD color. English/Chinese story and audit rendering are also checked after removing the recycling rows. Images remain under ignored `test-output/screenshots/extraction-*.png`.
+
 ## Assets
 
 - `assets/art/generated/oases/junkyard_oasis.png`

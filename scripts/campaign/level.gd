@@ -11,7 +11,6 @@ var _platforms: Array = []
 var _route_platforms: Array = []
 var _route_ramps: Array = []
 var _spike_areas: Array[Area2D] = []
-var _pickups: Array[Area2D] = []
 var _checkpoints: Array = []
 var _clock: float = 0.0
 var _background: Texture2D
@@ -26,6 +25,7 @@ var _gate: StaticBody2D
 var _route_ready: bool = false
 var oases: Dictionary[StringName, CampaignOasis] = {}
 var extraction: LandExtraction
+var ecology: SceneEcology
 var _secondary_label: Label
 var _dark_bodies: Array[StaticBody2D] = []
 var _mineral_platforms: Array[Rect2] = []
@@ -42,9 +42,6 @@ var _signs: Array[Dictionary] = []
 func _ready() -> void:
 	definition = CampaignLevels.definition(region_id)
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var ecology:=ShaderMaterial.new()
-	ecology.shader=preload("res://assets/ecology.gdshader")
-	material=ecology
 	_background = definition.get("background_texture") as Texture2D
 	if _background==null:
 		_background = CampaignLevels.texture("backgrounds/"+definition.background)
@@ -98,8 +95,6 @@ func _ready() -> void:
 		_spawn_enemy(definition.enemies[index],definition.patrols[index],"mob_%d"%index)
 	if definition.has("boss"):
 		_spawn_enemy(definition.boss,Vector2(3640,4140),"boss",true)
-	for index in definition.shards.size():
-		_spawn_shard(definition.shards[index],index)
 	for index in definition.checkpoints.size():
 		var point: Vector2 = definition.checkpoints[index]
 		var area := _area(Rect2(point-Vector2(22,30),Vector2(44,54)),"Checkpoint")
@@ -118,9 +113,10 @@ func _ready() -> void:
 		_add_oasis(definition.secondary_source, definition.secondary_ability)
 	extraction = LandExtraction.new()
 	add_child(extraction)
+	ecology = SceneEcology.new()
+	ecology.bind(self)
+	add_child(ecology)
 	_add_region_signs()
-	for point: Vector2 in definition.recycling:
-		_label(point+Vector2(-30,-65),GameText.t("V 循环拆解"),13,Color(0.55,0.89,0.75))
 	for index in definition.mineral_nodes.size():
 		var node: Dictionary=definition.mineral_nodes[index]
 		_label(node.point+Vector2(-55,-80),GameText.t("%s · C 固化毒雾")%[["I","II","III"][index]],14,Color(0.7,0.9,0.48))
@@ -157,9 +153,6 @@ func _process(delta: float) -> void:
 		return
 	_clock+=delta
 	_update_toxin(delta)
-	for area in _pickups:
-		if is_instance_valid(area):
-			area.get_child(1).position.y=sin(_clock*3.5+area.position.x)*4.0
 	if WorldProgress.returning:
 		if _companions.is_empty():
 			_companions.assign([player.position,player.position,player.position])
@@ -191,16 +184,6 @@ func _physics_process(_delta: float) -> void:
 	_interact_source(definition.source,definition.ability)
 	if definition.has("secondary_source"):
 		_interact_source(definition.secondary_source,definition.secondary_ability)
-	if Input.is_action_just_pressed(&"eden_recycle"):
-		for index in definition.recycling.size():
-			if player.position.distance_to(definition.recycling[index])<95.0:
-				var id:=_entity_id("recycle_%d"%index)
-				if CarbonLedger.recycle(id):
-					WorldProgress.collect_once(id)
-					player.stats.add_score(75)
-					SoundManager.play_sfx(&"pickup")
-					WorldProgress.set_notice(GameText.t("循环拆解完成：材料回收 +%.0f kg；矿石替代量为教学估算，见审计报告。")%CarbonLedger.rules.recycled_material_per_node_kg)
-				break
 	if Input.is_action_just_pressed(&"eden_trial_blade") and OS.is_debug_build():
 		WorldProgress.borrow_ability(&"light_blade")
 
@@ -283,24 +266,6 @@ func _spawn_projectile(origin: Vector2,direction: float) -> void:
 	add_child(bolt)
 
 
-func _spawn_shard(point: Vector2,index: int) -> void:
-	var id:=_entity_id("shard_%d"%index)
-	if WorldProgress.is_collected(id):
-		return
-	var area:=_area(Rect2(point-Vector2(12,18),Vector2(24,36)),"Shard")
-	var gem:=Polygon2D.new()
-	gem.polygon=PackedVector2Array([Vector2(0,-14),Vector2(9,0),Vector2(0,14),Vector2(-9,0)])
-	gem.color=Color(0.98,0.77,0.36)
-	area.add_child(gem)
-	area.body_entered.connect(func(body: Node2D) -> void:
-		if body==player and WorldProgress.collect_once(id):
-			player.stats.add_score(100)
-			SoundManager.play_sfx(&"pickup",-7)
-			area.queue_free()
-	)
-	_pickups.append(area)
-
-
 func _refresh_world() -> void:
 	var ability: StringName=definition.ability
 	var status:=WorldProgress.ability_state(ability)
@@ -310,7 +275,6 @@ func _refresh_world() -> void:
 	for oasis: CampaignOasis in oases.values():
 		if not extraction.active or extraction._oasis != oasis:
 			oasis.refresh_state()
-	(material as ShaderMaterial).set_shader_parameter("bleaching",0.55 if WorldProgress.land_state(region_id)==&"wasted" else 0.0)
 	if _secondary_label!=null:
 		var second_status:=WorldProgress.ability_state(definition.secondary_ability)
 		var second_hint: String=GameText.t("R 卸下黑穿") if WorldProgress.core_reversed else GameText.t("F 可用 · 向右探索")
@@ -501,11 +465,6 @@ func _draw() -> void:
 		var converted:=WorldProgress.is_collected(_entity_id("mineral_%d"%index))
 		draw_circle(node.point-Vector2(0,22),20,Color(_mineral_tint(),0.25) if converted else Color(0.49,0.6,0.21,0.36))
 		draw_arc(node.point-Vector2(0,22),25,0,TAU,20,_mineral_tint() if converted else Color(0.7,0.77,0.28),2)
-	for index in definition.recycling.size():
-		var point: Vector2=definition.recycling[index]
-		var recycled:=WorldProgress.is_collected(_entity_id("recycle_%d"%index))
-		draw_rect(Rect2(point-Vector2(16,22),Vector2(32,32)),Color(0.17,0.38,0.28) if recycled else Color(0.42,0.35,0.22))
-		draw_arc(point-Vector2(0,6),10,0.2,TAU-0.4,12,Color(0.55,0.91,0.67),2)
 	for points: PackedVector2Array in _route_ramps:
 		if _scenery_terrain!=null:
 			var bounds:=Rect2(points[0],Vector2.ZERO)

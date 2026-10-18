@@ -195,7 +195,7 @@ func snapshot() -> Dictionary:
 			"recycled_material_per_node_kg": rules.recycled_material_per_node_kg, "teaching_ore_ratio": rules.teaching_ore_ratio,
 			"gasoline_kg_co2_per_us_gallon": KG_CO2_PER_US_GALLON, "litres_per_us_gallon": LITRES_PER_US_GALLON},
 		"sources": [EPA_SOURCE, DOE_SOURCE],
-		"methodology": GameText.t("排放、固碳和材料质量均为游戏模型。汽油类比使用 EPA 8.887 kg CO2/美制加仑，仅作量级比较；矿石替代比为教学假设。累计排放不会被抵销或清零。"),
+		"methodology": GameText.t("排放与固碳均为游戏教学模型。汽油类比使用 EPA 8.887 kg CO2/美制加仑，仅作量级比较。累计排放不会被抵销或清零。"),
 	}
 
 

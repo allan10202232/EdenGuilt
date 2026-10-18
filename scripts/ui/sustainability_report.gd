@@ -65,7 +65,7 @@ func _ready() -> void:
 	_community=_label(right,"",16)
 	_equivalence=_label(right,"",14,GothicSkin.MUTED)
 	_equivalence.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	var method:=_label(content,GameText.t("教学模型：排放与固碳为游戏设定，累计排放不会被修复清零。汽油类比使用 EPA 系数；矿石替代比为可调教学假设。\nExergy 为可用能利用率的游戏化指标，完整公式、参数与 EPA / DOE 来源已写入报告。"),13,Color(0.56,0.67,0.63))
+	var method:=_label(content,GameText.t("教学模型：排放与固碳为游戏设定，累计排放不会被修复清零。汽油类比使用 EPA 系数。\nExergy 为可用能利用率的游戏化指标，完整公式、参数与 EPA / DOE 来源已写入报告。"),13,Color(0.56,0.67,0.63))
 	method.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	var actions:=HBoxContainer.new()
 	actions.add_theme_constant_override(&"separation",16)
@@ -109,8 +109,8 @@ func _refresh_result() -> void:
 	rows.append(GameText.t("精准释放 %d 次 · 高频释放 %d 次")%[data.precise_casts,data.rapid_casts])
 	_skills.text="\n".join(rows)
 	_reflection.text=GameText.t("力量曾让你独自越过深渊。\n回家的桥，却是和别人一起修好的。") if choice_a else GameText.t("你保住了窗内的春天。\n窗外的人仍替你呼吸。")
-	_community.text=GameText.t("救出居民  %d 人\n共同修复  %d / 3 地区\n循环拆解  %d 个节点 · 回收材料 %.0f kg\n当前污染负荷  %.1f kg（模拟）")%[data.people,data.restored_regions,data.recycled_nodes,data.recycled_material_kg,data.pollution_load_kg]
-	_equivalence.text=GameText.t("现实量级类比：本局模拟排放约对应 %.1f 升汽油燃烧。\n循环经济教学估算：原生矿石替代 %.1f kg。\n这些是游戏数据类比，不是现实排放或减排证明。")%[data.gasoline_litres_analogy,data.teaching_ore_avoided_kg]
+	_community.text=GameText.t("救出居民  %d 人\n共同修复  %d / 3 地区\n当前污染负荷  %.1f kg（模拟）")%[data.people,data.restored_regions,data.pollution_load_kg]
+	_equivalence.text=GameText.t("现实量级类比：本局模拟排放约对应 %.1f 升汽油燃烧。\n这些是游戏数据类比，不是现实排放或减排证明。")%data.gasoline_litres_analogy
 
 
 func _export() -> void:
