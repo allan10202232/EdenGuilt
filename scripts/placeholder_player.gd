@@ -25,14 +25,25 @@ var _shield_time: float = 0.0
 var _shield_recovery: float = 0.0
 var extracting := false
 var extraction_progress := 0.0
+var impact_pause := 0.0
+var _jump_held := false
+var _feedback: CombatFeedback
+var grounding: ActorGrounding
 
 
 func _ready() -> void:
 	combat.setup(self, _can_melee_attack)
 	combat.attack_started.connect(func(_move: MeleeAttackProfile) -> void:
 		WorldProgress.report_ability_used(&"light_blade")
+		SoundManager.play_sfx(&"slash_reach" if _move.id == &"reach_melee" else &"slash_close", -8.0)
 	)
 	if campaign_character:
+		grounding = ActorGrounding.new()
+		grounding.bind(self, 24.0, 17.0, 17)
+		add_child(grounding)
+		_feedback = CombatFeedback.new()
+		add_child(_feedback)
+		_feedback.bind(self)
 		collision_mask = 17
 		combat.close_attack.show_hitbox = false
 		combat.reach_attack.show_hitbox = false
@@ -67,6 +78,7 @@ func face_direction(direction: float) -> void:
 func begin_extraction(ground: Vector2) -> void:
 	extracting = true
 	extraction_progress = 0.0
+	impact_pause = 0.0
 	velocity = Vector2.ZERO
 	combat.cancel()
 	_dash_remaining = 0.0
@@ -87,6 +99,11 @@ func finish_extraction() -> void:
 
 func _physics_process(delta: float) -> void:
 	if not WorldProgress.can_play():
+		combat.clear_buffer()
+		return
+	_jump_buffer = 0.12 if Input.is_action_just_pressed(&"eden_jump") else maxf(0.0,_jump_buffer-delta)
+	if impact_pause > 0.0:
+		impact_pause = maxf(0.0, impact_pause - delta)
 		return
 	_invulnerability = maxf(0.0, _invulnerability - delta)
 	modulate.a = 0.45 if _invulnerability > 0.0 and int(_invulnerability * 15.0) % 2 else 1.0
@@ -121,7 +138,10 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
 	var jump_limit := 2 if WorldProgress.has_ability(&"double_jump") else 1
-	_jump_buffer = 0.12 if Input.is_action_just_pressed(&"eden_jump") else maxf(0.0,_jump_buffer-delta)
+	var holding_jump := Input.is_action_pressed(&"eden_jump")
+	if campaign_character and _jump_held and not holding_jump and velocity.y < JUMP_SPEED * 0.55:
+		velocity.y = JUMP_SPEED * 0.55
+	_jump_held = holding_jump
 	var buffered_jump := campaign_character and _jump_buffer>0.0
 	var can_coyote := campaign_character and _coyote>0.0 and _jumps_used==1
 	if (buffered_jump or Input.is_action_just_pressed(&"eden_jump")) and (_jumps_used < jump_limit or can_coyote):
@@ -130,7 +150,7 @@ func _physics_process(delta: float) -> void:
 		_jumps_used += 1
 		_coyote=0.0
 		_jump_buffer=0.0
-		velocity.y = JUMP_SPEED
+		velocity.y = JUMP_SPEED if not campaign_character or holding_jump else JUMP_SPEED * 0.55
 		if _jumps_used == 2:
 			WorldProgress.report_ability_used(&"double_jump")
 			if _art!=null: _art.play_action(&"double_jump",0.22)
@@ -161,6 +181,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	if _art!=null and is_on_floor() and not was_on_floor:
 		_art.play_action(&"land",0.10)
+		SoundManager.play_sfx(&"land", -15.0)
 	queue_redraw()
 	if global_position.y > death_height:
 		GameSession.player_died(&"fall")
@@ -170,10 +191,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not WorldProgress.can_play():
 		return
 	if event.is_action_pressed(&"eden_slash"):
-		combat.try_close(_facing)
+		combat.request_attack(false, _facing)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed(&"eden_reach_slash"):
-		combat.try_reach(_facing)
+		combat.request_attack(true, _facing)
 		get_viewport().set_input_as_handled()
 
 

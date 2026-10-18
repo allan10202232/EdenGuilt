@@ -42,6 +42,12 @@ func _ready() -> void:
 	register_sound(&"slash", _tone(320.0, 0.08))
 	register_sound(&"enemy_down", _tone(185.0, 0.1))
 	register_sound(&"checkpoint", _tone(790.0, 0.15))
+	register_sound(&"slash_close",load("res://assets/audio/combat/slash_close.wav"))
+	register_sound(&"slash_reach",load("res://assets/audio/combat/slash_reach.wav"))
+	register_sound(&"impact_light",load("res://assets/audio/combat/impact_light.wav"))
+	register_sound(&"impact_heavy",load("res://assets/audio/combat/impact_heavy.wav"))
+	register_sound(&"enemy_down",load("res://assets/audio/combat/enemy_break.wav"))
+	register_sound(&"land",load("res://assets/audio/combat/land.wav"))
 	WorldProgress.ability_absorbed.connect(func(_id: StringName) -> void: play_sfx(&"absorb"))
 	WorldProgress.ability_returned.connect(func(_id: StringName) -> void: play_sfx(&"return"))
 	WorldProgress.ability_used.connect(_on_ability_used)
@@ -54,6 +60,8 @@ func _ready() -> void:
 
 
 func _on_ability_used(id: StringName) -> void:
+	# Weapon-specific swooshes follow accepted attacks; the ledger stays independent.
+	if id == &"light_blade": return
 	var definition := AbilityCatalog.definition(id)
 	if not definition.is_empty():
 		play_sfx(definition.sound, -6.0)

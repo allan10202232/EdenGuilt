@@ -33,6 +33,8 @@
 | `characters/hero_green.png` | shape2 的透明背景版本 |
 | `animations/hero_red_actions.png` | 红色形态 24 帧动作，6×4 格 |
 | `animations/hero_green_actions.png` | 绿色形态 24 帧动作，6×4 格 |
+| `animations/hero_red_motion.png` | 红形态补绘运动表：跑跳、六帧短砍与六帧长砍，6×4 格 |
+| `animations/hero_green_motion.png` | 绿形态补绘运动表，同布局与角色设计 |
 | `terrain/biome_atlas.png` | 两列三行图集：森林、垃圾场、矿厂；左列地表，右列填充 |
 | `scenarios/junkyard_middle.png` | 参考 Scenario1 补画的黄绿色雾气垃圾场中段背景 |
 | `scenarios/mine_middle.png` | 参考 Scenario2 补画的灰紫晶体矿坑中段背景 |
@@ -68,3 +70,6 @@ PNG 透明通道已在 Godot 实际加载验证。角色与敌人使用 AtlasTex
 
 新增透明绿洲与吸取动作素材的原图保持不变，枯萎、灰化、生命流和收束粒子由游戏实时绘制。
 吸取动作使用独立六帧表，保持原有 24 帧动作表不变；提示词和参考图见 [土地抽取美术记录](../../docs/land-extraction-art.md)。
+
+补绘运动表由内置 image_gen 参考原动作表生成，保存为新文件；完整提示词见 [运动表生成记录](../../docs/motion-art-prompts.json)。
+运行时通过材质统一像素采样、去除低透明光晕并轻度融入各关光色；两张补绘表及原技能表均保留 alpha，不修改原始 PNG。

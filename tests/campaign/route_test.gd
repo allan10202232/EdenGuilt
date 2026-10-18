@@ -127,7 +127,7 @@ func _tick(count: int) -> void:
 
 func _action(action: StringName) -> void:
 	Input.action_press(action)
-	await _tick(2)
+	await _tick(12 if action==&"eden_jump" else 2)
 	Input.action_release(action)
 	await _tick(2)
 	if action == &"eden_absorb":
@@ -157,15 +157,16 @@ func _leap(target: float) -> void:
 	var action:=&"eden_move_right" if direction>0 else &"eden_move_left"
 	Input.action_press(action)
 	Input.action_press(&"eden_run")
-	await _action(&"eden_jump")
-	await _tick(17)
-	await _action(&"eden_jump")
+	Input.action_press(&"eden_jump")
 	for index in 130:
+		if index in [14,32]: Input.action_release(&"eden_jump")
+		if index==18: Input.action_press(&"eden_jump")
 		if direction*(target-_player().position.x)<5: Input.action_release(action)
 		if index>10 and _player().is_on_floor() and absf(target-_player().position.x)<20: break
 		await _tick(1)
 	Input.action_release(action)
 	Input.action_release(&"eden_run")
+	Input.action_release(&"eden_jump")
 	_check(_player().is_on_floor() and absf(target-_player().position.x)<20,"jump to %.0f landed at %s"%[target,_player().position])
 
 func _check(ok: bool,label: String) -> void:

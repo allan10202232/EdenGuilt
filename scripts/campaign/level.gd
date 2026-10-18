@@ -136,6 +136,10 @@ func _ready() -> void:
 	npc.region=region_id
 	npc.position=Vector2(260 if region_id!=&"grassland" else 360,596)
 	add_child(npc)
+	var foreground := ForegroundGrowth.new()
+	foreground.points = growth_points
+	foreground.region = region_id
+	add_child(foreground)
 	_refresh_world()
 	# A playable campaign needs a starting weapon; formal acquisition remains configurable.
 	if WorldProgress.ability_state(&"light_blade")==WorldProgress.AbilityState.UNAVAILABLE:

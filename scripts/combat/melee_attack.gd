@@ -24,6 +24,7 @@ var _remaining: float = 0.0
 var _facing: float = 1.0
 var _hit_receivers: Dictionary = {}
 var _shape := RectangleShape2D.new()
+var impact_pause := 0.0
 
 
 func _ready() -> void:
@@ -46,6 +47,7 @@ func try_attack(facing: float) -> bool:
 		return false
 	# Resources are shared. Snapshot each attack so editing a preset cannot change a live hit.
 	_move = profile.duplicate(true) as MeleeAttackProfile
+	impact_pause = 0.0
 	_facing = signf(facing)
 	_hit_receivers.clear()
 	_shape.size = Vector2(_move.reach, _move.height)
@@ -55,6 +57,7 @@ func try_attack(facing: float) -> bool:
 
 
 func cancel() -> void:
+	impact_pause = 0.0
 	if not is_busy():
 		return
 	_set_phase(Phase.IDLE, 0.0)
@@ -68,6 +71,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if not _allowed():
 		cancel()
+		return
+	if impact_pause > 0.0:
+		impact_pause = maxf(0.0, impact_pause - delta)
 		return
 	_remaining -= delta
 	while _remaining <= 0.0 and is_busy():
@@ -105,6 +111,12 @@ func _set_phase(next: Phase, duration: float) -> void:
 func _hit_rect() -> Rect2:
 	var left := _move.forward_offset if _facing > 0.0 else -_move.forward_offset - _move.reach
 	return Rect2(left, _move.vertical_offset - _move.height * 0.5, _move.reach, _move.height)
+
+
+func phase_progress() -> float:
+	if _move == null: return 0.0
+	var duration: float = _move.windup if phase == Phase.WINDUP else _move.active_time if phase == Phase.ACTIVE else _move.recovery if phase == Phase.RECOVERY else _move.cooldown
+	return clampf(1.0 - _remaining / maxf(0.001, duration), 0.0, 1.0)
 
 
 func _sample_targets() -> void:

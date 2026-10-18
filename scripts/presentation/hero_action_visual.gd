@@ -5,6 +5,10 @@ extends Node2D
 
 const RED: Texture2D = preload("res://assets/art/generated/animations/hero_red_actions.png")
 const GREEN: Texture2D = preload("res://assets/art/generated/animations/hero_green_actions.png")
+const MOTION_RED: Texture2D = preload("res://assets/art/generated/animations/hero_red_motion.png")
+const MOTION_GREEN: Texture2D = preload("res://assets/art/generated/animations/hero_green_motion.png")
+const MOTION_RED_FEET := [245,245,245,244,247,245,255,255,231,255,255,255,237,237,237,237,237,237,220,220,220,220,220,220]
+const MOTION_GREEN_FEET := [250,253,253,253,253,253,255,255,225,247,249,255,245,244,244,245,245,245,224,226,222,226,226,226]
 const EXTRACTION: Texture2D = preload("res://assets/art/generated/animations/hero_extract_actions.png")
 const EXTRACTION_FEET := [487, 488, 488, 454, 455, 452]
 const EXTRACTION_FOCUS := [Vector2(2, 2), Vector2(21, 2), Vector2(26, 19), Vector2(27, 1), Vector2(21, -18), Vector2(20, 2)]
@@ -28,6 +32,12 @@ var _dead := false
 var _death_clock := 0.0
 var _dust_clock := 0.0
 var _effects: Array[Dictionary] = []
+var _lighting: ShaderMaterial
+var _extraction_lighting: ShaderMaterial
+var _land_time := 0.0
+var _turn_time := 0.0
+var _last_facing := 1.0
+var using_motion := true
 
 func bind(player: CharacterBody2D) -> void:
 	actor=player
@@ -40,6 +50,9 @@ func bind(player: CharacterBody2D) -> void:
 	sprite.scale=Vector2.ONE*0.36
 	sprite.position=Vector2(0,-20)
 	add_child(sprite)
+	_lighting = ShaderMaterial.new()
+	_lighting.shader = preload("res://assets/shaders/actor_lighting.gdshader")
+	sprite.material = _lighting
 	extraction_sprite = Sprite2D.new()
 	extraction_sprite.texture = EXTRACTION
 	extraction_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -48,6 +61,9 @@ func bind(player: CharacterBody2D) -> void:
 	extraction_sprite.scale = Vector2.ONE * 0.18
 	extraction_sprite.hide()
 	add_child(extraction_sprite)
+	_extraction_lighting = _lighting.duplicate() as ShaderMaterial
+	_extraction_lighting.set_shader_parameter("cells",Vector2(3,2))
+	extraction_sprite.material = _extraction_lighting
 	set_form(WorldProgress.core_reversed)
 	for attack in [actor.combat.close_attack,actor.combat.reach_attack]:
 		attack.phase_changed.connect(func(_next: int) -> void: _phase_clock=0.0)
@@ -57,6 +73,16 @@ func bind(player: CharacterBody2D) -> void:
 	)
 	actor.combat.target_hit.connect(func(_receiver: Node, hit: Dictionary) -> void:
 		_effects.append({"point":hit.position,"life":0.18,"duration":0.18,"kind":&"hit"})
+		# The first collision can precede this node's next render update.
+		# Freeze the striking pose, never the preceding anticipation frame.
+		var attack := _visible_attack()
+		if attack!=null:
+			using_motion=true
+			action=&"close_melee" if attack==actor.combat.close_attack else &"reach_melee"
+			sprite.texture=MOTION_GREEN if green_form else MOTION_RED
+			sprite.frame=14 if action==&"close_melee" else 20
+			sprite.flip_h=attack._facing<0
+		queue_redraw()
 	)
 	for event: Signal in [WorldProgress.ability_absorbed,WorldProgress.ability_returned]:
 		event.connect(func(_id: StringName) -> void:
@@ -64,15 +90,24 @@ func bind(player: CharacterBody2D) -> void:
 				play_action(&"channel",0.28)
 		)
 	GameSession.state_changed.connect(_on_state)
+	WorldProgress.world_changed.connect(_refresh_light)
+	_refresh_light()
 
 func set_form(green: bool) -> void:
 	green_form=green
-	if sprite!=null: sprite.texture=GREEN if green else RED
+	if sprite!=null: sprite.texture=(MOTION_GREEN if green else MOTION_RED) if using_motion else (GREEN if green else RED)
+
+func _refresh_light() -> void:
+	for light: ShaderMaterial in [_lighting,_extraction_lighting]:
+		light.set_shader_parameter("ambient",ActorGrounding.ambient_color())
+		light.set_shader_parameter("energy_tint",Color(0.25,1.0,0.55) if green_form else Color(1.0,0.38,0.18))
 
 func play_action(next: StringName,duration: float) -> void:
 	if _dead: return
-	_pose=next
-	_pose_left=duration
+	if next==&"land": _land_time=0.12
+	if next not in [&"land",&"jump",&"double_jump"] or _visible_attack()==null:
+		_pose=next
+		_pose_left=duration
 	if next in [&"jump",&"double_jump",&"land",&"mineralization"]:
 		_effects.append({"point":global_position+Vector2(0,23),"life":0.32,"duration":0.32,"kind":next})
 
@@ -85,9 +120,12 @@ func _on_state(_previous: int,current: int) -> void:
 func _process(delta: float) -> void:
 	if not is_instance_valid(actor) or not actor.is_inside_tree(): return
 	if not _dead and not WorldProgress.can_play() and not actor.extracting: return
+	if not _dead and actor.impact_pause>0.0: return
 	_clock+=delta
 	_phase_clock+=delta
 	_pose_left=maxf(0.0,_pose_left-delta)
+	_land_time=maxf(0.0,_land_time-delta)
+	_turn_time=maxf(0.0,_turn_time-delta)
 	for effect in _effects: effect.life-=delta
 	_effects=_effects.filter(func(entry: Dictionary) -> bool: return entry.life>0.0)
 	if actor.extracting and not _dead:
@@ -100,31 +138,40 @@ func _process(delta: float) -> void:
 		extraction_sprite.frame = frame
 		extraction_sprite.flip_h = actor._facing < 0
 		extraction_sprite.position.y = 24.0 - (EXTRACTION_FEET[frame] - 256) * 0.18
+		_extraction_lighting.set_shader_parameter("energy",sin(progress*PI))
 		queue_redraw()
 		return
 	extraction_sprite.hide()
 	sprite.show()
 	var facing: float=actor._facing
 	var attack: MeleeAttack=_visible_attack()
+	using_motion = false
 	if _dead:
 		_death_clock+=delta
 		action=&"hurt" if _death_clock<0.12 else &"death"
 		sprite.frame=POSES[action]
-	elif _pose_left>0.0:
+	elif _pose_left>0.0 and _pose not in [&"land",&"jump",&"double_jump"]:
 		action=_pose
 		sprite.frame=POSES[action]
 	elif attack!=null:
+		using_motion = true
 		facing=attack._facing
 		action=&"close_melee" if attack==actor.combat.close_attack else &"reach_melee"
-		var base:=12 if action==&"close_melee" else 15
-		sprite.frame=base+clampi(attack.phase-1,0,2)
+		var base:=12 if action==&"close_melee" else 18
+		sprite.frame=base+clampi(attack.phase-1,0,2)*2+mini(1,int(attack.phase_progress()*2.0))
+	elif _pose_left>0.0:
+		using_motion = true
+		action = _pose
+		sprite.frame = POSES[action]
 	elif WorldProgress.shield_active:
 		action=&"shield"
 		sprite.frame=19
 	elif not actor.is_on_floor():
+		using_motion = true
 		action=&"jump" if actor.velocity.y<0 else &"fall"
 		sprite.frame=POSES[action]
 	elif absf(actor.velocity.x)>5:
+		using_motion = true
 		action=&"run"
 		sprite.frame=int(_clock*(14.0 if absf(actor.velocity.x)>300 else 10.0))%6
 		_dust_clock-=delta
@@ -132,12 +179,26 @@ func _process(delta: float) -> void:
 			_dust_clock=0.12
 			_effects.append({"point":global_position+Vector2(0,23),"life":0.25,"duration":0.25,"kind":&"dust"})
 	else:
+		using_motion = true
 		action=&"idle"
 		sprite.frame=6+int(_clock*2.0)%2
+	sprite.texture=(MOTION_GREEN if green_form else MOTION_RED) if using_motion else (GREEN if green_form else RED)
 	sprite.flip_h=facing<0
 	sprite.rotation=0.0
-	var feet: int=(GREEN_FEET if green_form else RED_FEET)[sprite.frame]
-	sprite.position.y=24.0-(feet-128)*0.36 if actor.is_on_floor() or _dead else -20.0
+	if facing!=_last_facing:
+		_turn_time = 0.09
+		_last_facing = facing
+	var scale_base := 0.375 if using_motion else 0.36
+	var compression := sin(_land_time/0.12*PI)*0.065 if actor.is_on_floor() else 0.0
+	sprite.scale=Vector2(scale_base*(1.0+compression*0.5-_turn_time*0.45),scale_base*(1.0-compression))
+	var feet: int=((MOTION_GREEN_FEET if green_form else MOTION_RED_FEET) if using_motion else (GREEN_FEET if green_form else RED_FEET))[sprite.frame]
+	sprite.position.y=roundf(24.0-(feet-128)*sprite.scale.y) if using_motion or actor.is_on_floor() or _dead else -20.0
+	var lean := clampf(actor.velocity.x/160.0,-2.0,2.0)
+	if attack!=null:
+		lean = attack._facing * (-2.0 if attack.phase==MeleeAttack.Phase.WINDUP else 3.0 if attack.phase==MeleeAttack.Phase.ACTIVE else 1.0)
+	sprite.position.x=roundf(lean)
+	_lighting.set_shader_parameter("flash",0.6 if action==&"hurt" and _pose_left>0.15 else 0.0)
+	_lighting.set_shader_parameter("energy",0.8 if attack!=null or WorldProgress.shield_active or action in [&"channel",&"mineralization",&"black_pierce"] else 0.0)
 	queue_redraw()
 
 func extraction_focus() -> Vector2:
@@ -166,12 +227,12 @@ func _draw() -> void:
 		else:
 			draw_arc(center,8+progress*(33 if effect.kind!=&"dust" else 12),PI,TAU,16,Color(tint,(1-progress)*0.6),2)
 	var attack:=_visible_attack()
-	if not _dead and _pose_left<=0 and attack!=null and attack.phase==MeleeAttack.Phase.ACTIVE:
+	if not _dead and attack!=null and attack.phase==MeleeAttack.Phase.ACTIVE:
 		var reach: float=attack._move.reach
 		var face: float=attack._facing
-		var progress:=clampf(_phase_clock/attack._move.active_time,0,1)
+		var progress:=attack.phase_progress()
 		if attack==actor.combat.close_attack:
-			var angle:=lerpf(-1.25,1.2,progress)
+			var angle:=lerpf(0.15,1.0,progress)
 			var points:=PackedVector2Array()
 			for index in 18:
 				var a:=angle-float(index)*0.055

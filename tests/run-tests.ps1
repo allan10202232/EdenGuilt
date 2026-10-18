@@ -159,6 +159,15 @@ try {
     Invoke-GodotCheck -EngineArguments $actionArguments -LogPath $actionLog -Summary 'ACTIONS'
     Write-Host "Character actions passed. Log: $actionLog"
 
+    $feelLog = Join-Path $outputDirectory 'feel.log'
+    $feelArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $feelLog)
+    if ($Screenshots) { $feelArguments += @('--rendering-method', 'gl_compatibility') }
+    else { $feelArguments += '--headless' }
+    $feelArguments += 'res://tests/campaign/feel_test.tscn'
+    if ($Screenshots) { $feelArguments += @('--', '--screenshots') }
+    Invoke-GodotCheck -EngineArguments $feelArguments -LogPath $feelLog -Summary 'FEEL'
+    Write-Host "Combat response, variable jump, grounding and ambient light passed. Log: $feelLog"
+
     $enemyLog = Join-Path $outputDirectory 'enemy-actions.log'
     Invoke-GodotCheck -EngineArguments @(
         '--headless', '--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60',

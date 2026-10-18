@@ -216,7 +216,7 @@ func _run() -> void:
 	await _capture("carbon-04-truth-choice")
 	await _click(_app._truth.choice_a)
 	_check(WorldProgress.core_reversed and WorldProgress.returning and CarbonLedger.rescued_people==3,"actual A button reverses core and rescues residents")
-	_check(_player()._art.green_form and _player()._art.sprite.texture==HeroActionVisual.GREEN,"A choice is green transformation point")
+	_check(_player()._art.green_form and _player()._art.sprite.texture in [HeroActionVisual.GREEN,HeroActionVisual.MOTION_GREEN],"A choice is green transformation point")
 	await _action(&"eden_return")
 	await _physics(4)
 	_check(WorldProgress.repaired_regions.has(&"remnant_sea") and _level()._dark_bodies[0].get_child(0).disabled,"rescued residents open public return route at archive without another costly black pierce")
@@ -319,7 +319,7 @@ func _teleport(point: Vector2) -> void:
 
 func _action(action: StringName,held: bool=false) -> void:
 	Input.action_press(action)
-	await _physics(2)
+	await _physics(12 if action==&"eden_jump" else 2)
 	if not held:
 		Input.action_release(action)
 		await _physics(1)

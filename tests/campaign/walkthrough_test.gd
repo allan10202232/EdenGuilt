@@ -184,7 +184,7 @@ func _attack_nearby() -> void:
 func _action(action: StringName) -> void:
 	if failures: return
 	Input.action_press(action)
-	await _tick(2)
+	await _tick(12 if action==&"eden_jump" else 2)
 	Input.action_release(action)
 	await _tick(2)
 	if action == &"eden_absorb":
@@ -217,17 +217,17 @@ func _leap(target: float,double: bool=true) -> void:
 	var action:=&"eden_move_right" if direction>0 else &"eden_move_left"
 	Input.action_press(action)
 	Input.action_press(&"eden_run")
-	await _action(&"eden_jump")
-	if double:
-		await _tick(17)
-		await _action(&"eden_jump")
+	Input.action_press(&"eden_jump")
 	for index in 130:
 		if failures: break
+		if index in [14,32]: Input.action_release(&"eden_jump")
+		if index==18 and double: Input.action_press(&"eden_jump")
 		if direction*(target-_player().position.x)<5: Input.action_release(action)
 		if index>10 and _player().is_on_floor() and absf(target-_player().position.x)<20: break
 		await _tick(1)
 	Input.action_release(action)
 	Input.action_release(&"eden_run")
+	Input.action_release(&"eden_jump")
 	_check(_player().is_on_floor() and absf(target-_player().position.x)<20,"jump to %.0f landed at %s"%[target,_player().position])
 
 func _fight_guardian() -> void:
@@ -248,10 +248,10 @@ func _fight_guardian() -> void:
 			Input.action_press(&"eden_jump")
 			_guard_jump_at=_frame
 		elif _guard_jump_at>=0:
-			Input.action_release(&"eden_jump")
+			if _frame-_guard_jump_at==12: Input.action_release(&"eden_jump")
 			if _frame-_guard_jump_at==20:
 				Input.action_press(&"eden_jump")
-			elif _frame-_guard_jump_at==22: Input.action_release(&"eden_jump")
+			elif _frame-_guard_jump_at==32: Input.action_release(&"eden_jump")
 			if _frame-_guard_jump_at>40 and _player().is_on_floor(): _guard_jump_at=-1
 		await _tick(1)
 	Input.action_release(&"eden_move_left")

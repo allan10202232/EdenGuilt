@@ -22,9 +22,12 @@ var _actions: EnemyActionVisual
 var _recovery: float = 0.0
 var _hop_charge: float = 0.0
 var _hop_cooldown: float = 1.5
+var impact_pause := 0.0
+var grounding: ActorGrounding
 
 
 func _ready() -> void:
+	z_index = 4
 	collision_layer = 8
 	collision_mask = 1
 	max_health = 6 if boss else 1
@@ -47,11 +50,17 @@ func _ready() -> void:
 	add_child(_actions)
 	_skin = _actions.sprite
 	_clock = position.x * 0.013
+	grounding = ActorGrounding.new()
+	grounding.bind(self, 44.0 if boss else 20.0, 30.0 if boss else 17.0, 1)
+	add_child(grounding)
 	queue_redraw()
 
 
 func _physics_process(delta: float) -> void:
 	if not WorldProgress.can_play() or health <= 0 or not is_instance_valid(player):
+		return
+	if impact_pause > 0.0:
+		impact_pause = maxf(0.0, impact_pause - delta)
 		return
 	_clock += delta
 	_attack_cooldown -= delta*(1.45 if is_enraged() else 1.0)
@@ -63,7 +72,9 @@ func _physics_process(delta: float) -> void:
 	elif position.x > patrol.y:
 		_direction = -1.0
 	var distance := player.global_position-global_position
-	if _windup > 0.0:
+	if _stun > 0.0:
+		velocity.x = move_toward(velocity.x, 0.0, delta * 600.0)
+	elif _windup > 0.0:
 		_windup -= delta
 		velocity.x = 0.0
 		if _windup <= 0.0:
@@ -103,10 +114,14 @@ func receive_melee_hit(hit: Dictionary) -> bool:
 	if health<=0 or not WorldProgress.can_play():
 		return false
 	health = maxi(0,health-int(hit.get("damage",1)))
+	hit["lethal"] = health == 0
+	hit["boss"] = boss
+	hit["position"] = global_position
 	velocity += Vector2(hit.get("knockback",Vector2.ZERO))*0.55
 	_stun = 0.16
+	impact_pause = 0.045 if hit.get("attack_id", &"") == &"reach_melee" else 0.035
 	_actions.hurt()
-	SoundManager.play_sfx(&"hurt",-10.0,1.6)
+	SoundManager.play_sfx(&"impact_heavy" if hit.get("attack_id", &"") == &"reach_melee" else &"impact_light", -7.0)
 	queue_redraw()
 	if health==0:
 		WorldProgress.mark_enemy_defeated(persistent_id)
