@@ -4,3 +4,4 @@
 /test-output/
 *.tmp
 tools/
+__pycache__/

@@ -8,6 +8,10 @@ var _starting_game := false
 
 func _ready() -> void:
 	$OpeningCinematic.sequence_finished.connect(_start_game)
+	# Opt-in validation runs against the exact exported resources and native runtime.
+	if "--export-smoke-test" in OS.get_cmdline_user_args():
+		var verifier := preload("res://scripts/distribution/export_smoke.gd").new()
+		get_tree().root.add_child.call_deferred(verifier)
 
 
 func _start_game() -> void:

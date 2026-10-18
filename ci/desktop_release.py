@@ -83,6 +83,11 @@ def install(target, supplied_engine=None):
         archive = download(ASSETS[target])
         with zipfile.ZipFile(archive) as source:
             source.extractall(CACHE / "editor")
+            if target == "macos":
+                for entry in source.infolist():
+                    mode = (entry.external_attr >> 16) & 0o777
+                    if mode and not entry.is_dir():
+                        (CACHE / "editor" / entry.filename).chmod(mode)
         archive.unlink()
         if target == "macos":
             engine_path(target).chmod(0o755)
@@ -148,10 +153,14 @@ def build(target, supplied_engine=None):
         if scene:
             command.append(scene)
         checked_run(command, name)
+    checked_run([game_binary, "--headless", "--audio-driver", "Dummy", "--fixed-fps", "60",
+                 "--", "--export-smoke-test"], "packaged-three-chapters", "STANDALONE EXPORT")
     metadata = {"commit": os.environ.get("GITHUB_SHA", subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()),
                 "godot": version, "platform": target, "architecture": "x86_64" if target == "windows" else "universal (x86_64 + arm64)"}
     (output / "BUILDINFO.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     shutil.copy2(ROOT / "ci/PLAYER_README.txt", output / "README.txt")
+    for license_name in ["GODOT-LICENSE.txt", "GODOT-THIRD-PARTY.txt"]:
+        shutil.copy2(ROOT / "docs/distribution" / license_name, output / license_name)
     if target == "windows":
         (output / "Demo Mode.cmd").write_bytes(b'@echo off\r\ncd /d "%~dp0"\r\nstart "" "EdenGuilt.exe" res://scenes/demo/presentation.tscn -- --demo\r\n')
     else:

@@ -18,6 +18,12 @@ The game connects exploration and combat to resource extraction, carbon tracking
 
 ## Start the game
 
+### Standalone Windows build (no Godot installation)
+
+Extract the `EdenGuilt-Windows-x64.zip` package, then double-click **EdenGuilt.exe**. The game assets are embedded in the executable; the build runs offline on Windows 10 / 11 x64 with OpenGL 3.3 support. The illustrated prologue, all three chapters and current endings are included. Press **Enter** through the prologue. English / Chinese can be selected in Settings.
+
+The workspace build is at `D:/EdenGuilt/builds/EdenGuilt-Windows-x64/`. Build instructions and verification are in [Windows distribution](docs/windows-distribution.md). The following options are for running or editing the source project.
+
 **Requirements.** Use Godot **4.7.2**, matching the engine supplied with this workspace. The project uses GDScript and the GL Compatibility renderer; the .NET edition is not required. The included engine and launch scripts are for Windows.
 
 **Important project location.** The active three-chapter game is the repository-root `project.godot`. The `prototype/` directory contains an older prototype.
@@ -38,3 +44,4 @@ Set-Location 'D:\EdenGuilt'
 $engineFolder = '.\tools\Godot\Godot_v4.7.2-stable_win64.exe'
 $edenEngine = Join-Path $engineFolder 'Godot_v4.7.2-stable_win64.exe'
 & $edenEngine --path '.'
+```
