@@ -17,6 +17,8 @@ func _ready() -> void:
 func _run() -> void:
 	GameText.set_language("zh_CN",false)
 	_app=preload("res://scenes/main.tscn").instantiate()
+	# Historical horizontal Eden fixture; production four-floor Eden has its own route suite.
+	_app.eden_scene=preload("res://tests/fixtures/legacy_eden_room.tscn")
 	# Original controller / oasis fixture; production mine has its own route test.
 	_app.mine_scene=preload("res://tests/fixtures/legacy_mineralization_room.tscn")
 	add_child(_app)
@@ -64,10 +66,11 @@ func _run() -> void:
 	await _teleport(Vector2(1570,556))
 	_check(_level().current_section==1,"section two checkpoint has activated")
 	before=CarbonLedger.gross_kg
+	var health_before_fall:=GameSession.health
 	_player().position.y=910
 	await _physics(2)
 	_check(GameSession.state==GameSession.State.PLAYING and WorldProgress.scrapyard_deaths==1,"acid death immediately resumes the current section")
-	_check(GameSession.health==100 and CarbonLedger.gross_kg==before,"checkpoint restores health without carbon rollback")
+	_check(GameSession.health==maxi(0,health_before_fall-20) and CarbonLedger.gross_kg==before,"checkpoint preserves injury minus one orb without carbon rollback")
 	_check(_player().position.distance_to(Vector2(1570,556))<8 and WorldProgress.has_ability(&"double_jump"),"instant checkpoint keeps position and acquired ability")
 	await _teleport(Vector2(1570,556))
 	_check(not InputMap.has_action(&"eden_recycle"),"V recycling input is no longer registered")

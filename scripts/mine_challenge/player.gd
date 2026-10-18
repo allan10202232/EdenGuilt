@@ -135,7 +135,6 @@ func _physics_process(delta: float) -> void:
 			jumps_used=0
 			_coyote=0
 			_buffer=0
-			_set_health(100)
 			get_node("Camera2D").reset_smoothing()
 			modulate=Color.WHITE
 			_art.play_action(&"channel",0.24)
@@ -166,6 +165,7 @@ func _physics_process(delta: float) -> void:
 			_art.play_action(&"double_jump",0.22)
 			_play_mine_sound(&"double_jump",-9.0)
 			_resonance_light=0.45
+	if Input.is_action_just_pressed(&"eden_absorb") and level.try_extract(): return
 	if Input.is_action_just_pressed(&"mine_pulse"): cast_pulse()
 	var impact_speed:=velocity.y
 	move_and_slide()
@@ -192,6 +192,9 @@ func _physics_process(delta: float) -> void:
 
 func cast_pulse() -> int:
 	if not WorldProgress.can_play() or respawn_seconds>0 or cooldown>0: return 0
+	if not WorldProgress.has_ability(&"mineralization"):
+		level._tutorial_text("先到入口的潮湿矿脉按 E 吸取生命，获得碳矿化。")
+		return 0
 	cooldown=pulse_cooldown
 	_pulse_age=0
 	_pulse_origin=global_position
@@ -205,7 +208,7 @@ func cast_pulse() -> int:
 	return converted
 
 func touch_gas(delta: float) -> void:
-	if respawn_seconds>0: return
+	if respawn_seconds>0 or not WorldProgress.can_play(): return
 	_gas_slow=0.12
 	_gas_damage+=delta
 	if _gas_damage>=0.8:
@@ -220,12 +223,14 @@ func touch_gas(delta: float) -> void:
 func _set_health(value: int) -> void:
 	health=clampi(value,0,100)
 	health_changed.emit(health,100)
-	# Mine deaths use the short checkpoint retry, rather than global Game Over.
-	if health>0: GameSession.sync_health(health,100)
+	GameSession.sync_health(health,100)
 
 func dissolve() -> void:
 	if respawn_seconds>0 or not WorldProgress.can_play(): return
-	_set_health(0)
+	var survived:=GameSession.apply_fall_penalty()
+	health=GameSession.health
+	health_changed.emit(health,100)
+	if not survived: return
 	respawn_seconds=0.2
 	velocity=Vector2.ZERO
 	combat.cancel()
@@ -235,6 +240,18 @@ func dissolve() -> void:
 	MineralEffects.burst(level,level.to_local(global_position+Vector2(0,20)),&"acid")
 	modulate=Color(1,1,1,0.2)
 	level.reset_attempt.call_deferred()
+
+func begin_extraction(ground: Vector2) -> void:
+	extracting=true
+	extraction_progress=0.0
+	velocity=Vector2.ZERO
+	_buffer=0
+	combat.cancel()
+	if absf(ground.x-position.x)>12: facing=signf(ground.x-position.x)
+
+func finish_extraction() -> void:
+	extracting=false
+	extraction_progress=0.0
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not WorldProgress.can_play() or respawn_seconds>0 or event.is_echo(): return

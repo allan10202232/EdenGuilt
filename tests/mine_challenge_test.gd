@@ -36,6 +36,10 @@ func _run() -> void:
 	check(level.cliff_vents.all(func(vent: Node) -> bool: return vent.width==72 and vent.duration==2.8),"cliff platforms are narrow and short lived")
 	check(level.vents[0].platform==null and not level.shaft_vents[0].powered,"shaft is initially closed and gas begins hazardous")
 	await capture("mine-stage1-start")
+	await move_to(420)
+	await key(KEY_E)
+	for frame in 155: await ticks(1)
+	check(WorldProgress.has_ability(&"mineralization"),"entrance mining extraction unlocks mineralization with ordinary input")
 	await move_to(560)
 	await jump_to(Vector2(860,1800),level.vents[0])
 	check(level.pulse_count>0 and level.sequestered==level.pulse_count*150,"successful pulses sequester exactly 150 kg each")
@@ -79,8 +83,11 @@ func _run() -> void:
 	level.continue_to_eden()
 	await ticks(8)
 	check(WorldProgress.current_scene==&"remnant_sea" and app.get_node("LevelRoot").get_child(0).name=="EdenCity","summary continues to Eden City")
-	check(app._hud.visible,"regular HUD returns in Eden City")
+	check(app.get_node("LevelRoot").get_child(0).chapter_status.is_visible_in_tree(),"shared mine-style HUD remains visible in Eden City")
 	# White-box story setup, then physically walk the new mine's return route.
+	# Actual boss dismantling and three separate rescues belong to eden_chapter_test.
+	WorldProgress.eden_chapter["dismantled"]=true
+	WorldProgress.eden_chapter["rescued"]=[1,2,3]
 	WorldProgress.reveal_truth()
 	app._truth.choice_a.pressed.emit()
 	WorldProgress.enter_scene(&"grassland",Vector2(3900,450))

@@ -40,6 +40,7 @@ func _run() -> void:
 	await ticks(8)
 	level=app.get_node("LevelRoot").get_child(0)
 	actor=level.player
+	await preload("res://tests/helpers/mine_learning.gd").acquire(level,get_tree())
 	check(level.get_script().resource_path=="res://scripts/mine_challenge/level.gd" and level.vents.size()==25,"polished production mine retains all 25 mineralizable relay vents")
 	check(actor._art is HeroActionVisual and actor._art.sprite.texture in [Hero.MOTION_RED,Hero.RED],"mine uses the original campaign hero atlas, rather than a drawn placeholder")
 	check(actor.combat is MeleeCombat and not actor.combat.close_attack.show_placeholder_weapon and not actor.combat.close_attack.show_hitbox,"original real melee controller is integrated without debug weapon shapes")

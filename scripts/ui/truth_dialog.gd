@@ -2,6 +2,7 @@ extends Control
 
 var choice_a: Button
 var choice_b: Button
+var _story: Label
 
 
 func _ready() -> void:
@@ -26,6 +27,7 @@ func _ready() -> void:
 	heading_row.add_child(LanguagePicker.new())
 	_label(content,GameText.t("净土只占 10%，代价却在城外。"),32)
 	var story:=Label.new()
+	_story=story
 	story.text=GameText.t("垃圾场的人以为伊甸城已经消除了污染。矿工以为自己的毒雾只是必要的过渡。\n能源档案写着另一种答案：净土的四季如春，依靠向城外转移污染与开采成本。\n\n地脉提取器并没有凭空创造能量。你每一次轻易获得的力量，都留下不可抹去的账目。\n这座城把边界内的绿色，称作全世界的绿色。\n\n你可以公开这份账本，救出居民，将提取器改装为逆向循环核心。\n卸下技能不是独自变弱：和居民共同修桥、循环拆解，把绿色还给世界。")
 	story.add_theme_font_size_override(&"font_size",17)
 	story.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -48,6 +50,8 @@ func _ready() -> void:
 
 
 func present() -> void:
+	if WorldProgress.eden_chapter.get("active",false):
+		_story.text=EdenBlueprint.text("The tree is alive. The machine around its heart is the extractor.\nBehind Eden's zero-emission displays, living people feed the city's spring.\nYou have dismantled the extraction locks, not cut down the tree.\n\nCircular Mode will not free the residents for you. Return from 4F to 1F and rescue all three cultivation pods: the upper-right pod, Oren's bay, and your friend's ascension elevator.\n\nThen build a public descent and return Eden's borrowed skills. Bring everyone home through the mine and scrapyard. Gross emissions remain in the ledger.","树仍然活着。包围树心的机器，才是抽取器。\n在零排放显示屏背后，活人供养着伊甸的四季如春。\n你拆除了生命抽取装置，没有砍倒树。\n\n循环模式不会自动救出居民。由四层回到一层，亲自救出右上方培养舱、奥伦舱室和荣升电梯中的三个人。\n\n随后共建下降通路，交还伊甸借来的能力，再经矿坑与垃圾场带他们回家。累计排放仍会保留在账本中。")
 	show()
 	choice_a.grab_focus()
 

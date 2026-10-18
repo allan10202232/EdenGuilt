@@ -261,9 +261,6 @@ func hurt() -> void:
 	combat.cancel()
 	if _art!=null: _art.play_action(&"hurt",0.22)
 	SoundManager.play_sfx(&"hurt")
-	if lethal_handler.is_valid() and stats.health <= ceili(float(stats.max_health) / 10.0):
-		lethal_handler.call(&"scrap")
-		return
 	stats.take_hit()
 
 
@@ -285,7 +282,6 @@ func reset_at_checkpoint(point: Vector2) -> void:
 	_invulnerability = 0.85
 	combat.cancel()
 	WorldProgress.set_shield_active(false)
-	stats.heal(stats.max_health)
 
 
 func try_mineralize() -> bool:

@@ -36,7 +36,7 @@ func begin(actor: CharacterBody2D, oasis: CampaignOasis) -> bool:
 	active = true
 	actor.begin_extraction(oasis.global_position)
 	WorldProgress.extraction_active = true
-	WorldProgress.set_notice(GameText.t("正在抽取土地生命力……草木和泉水的生机正在汇入吸魂器。"))
+	WorldProgress.set_notice(oasis.extraction_notice())
 	SoundManager.play_sfx(&"absorb", -12.0, 0.55)
 	set_process(true)
 	return true
@@ -70,7 +70,7 @@ func _complete() -> void:
 	_oasis.refresh_state()
 	if granted:
 		_success_flash = 0.45
-		WorldProgress.set_notice(GameText.t("获得%s。眼前的绿洲已经枯竭；这份力量来自土地的生命。") % AbilityCatalog.definition(_ability).name)
+		WorldProgress.set_notice(_oasis.completion_notice())
 
 
 func _cancel() -> void:
@@ -95,15 +95,15 @@ func _draw() -> void:
 		var ground := to_local(_oasis.global_position)
 		var strength := smoothstep(0.12, 0.32, progress) * (1.0 - smoothstep(0.83, 1.0, progress))
 		for strand in 4:
-			var start := ground + Vector2(-110.0 + strand * 72.0, -8.0)
+			var start := ground + Vector2(_oasis.flow_width*(-0.5+strand/3.0), -8.0)
 			var points := PackedVector2Array()
 			for index in 19:
 				points.append(_flow_point(start, target, float(index) / 18.0, strand))
-			draw_polyline(points, Color(0.24, 0.82, 0.43, strength * 0.35), 3.0)
+			draw_polyline(points, Color(_oasis.energy_color.darkened(0.25),strength*0.35), 3.0)
 			for index in 6:
 				var fraction := fposmod(_elapsed * 0.9 + float(index) / 6.0 + strand * 0.19, 1.0)
 				var point := _flow_point(start, target, fraction, strand)
-				draw_rect(Rect2(point, Vector2(3, 3)), Color(0.65, 1.0, 0.5, strength))
+				draw_rect(Rect2(point, Vector2(3, 3)), Color(_oasis.energy_color,strength))
 		var bar := to_local(_player.global_position) + Vector2(-43, 35)
 		draw_rect(Rect2(bar - Vector2(2, 2), Vector2(90, 8)), Color(0.025, 0.06, 0.04, 0.9))
 		draw_rect(Rect2(bar, Vector2(86.0 * progress, 4)), Color(0.53, 0.94, 0.59))

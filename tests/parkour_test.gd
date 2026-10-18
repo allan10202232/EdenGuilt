@@ -62,6 +62,9 @@ func _run() -> void:
 	check(player().velocity.y<0 and player()._jumps_used==1,"a jump buffered just before landing executes on contact")
 	var old: int = WorldProgress.scrapyard_deaths
 	for index in 6:
+		# Independent checkpoint-support cases; depletion is covered by the shared
+		# chapter-consistency suite instead of ending this fixture after five falls.
+		player().stats.heal(player().stats.max_health)
 		player().position = ScrapyardLayout.SECTIONS[index].spawn
 		player().velocity = Vector2.ZERO
 		await ticks(5)

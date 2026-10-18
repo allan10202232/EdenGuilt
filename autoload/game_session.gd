@@ -72,6 +72,14 @@ func player_died(reason: StringName = &"damage") -> void:
 		sync_health(0, max_health)
 
 
+func apply_fall_penalty() -> bool:
+	if not WorldProgress.can_play(): return false
+	_death_reason=&"fall"
+	sync_health(maxi(0,health-ceili(float(max_health)/5.0)),max_health)
+	if health>0: _death_reason=&"damage"
+	return health>0 and state==State.PLAYING
+
+
 func resume_checkpoint() -> void:
 	if state != State.GAME_OVER or not WorldProgress.restore_checkpoint():
 		return

@@ -4,10 +4,11 @@ const Art=preload("res://scripts/mine_challenge/mine_art.gd")
 const Audio=preload("res://scripts/mine_challenge/mine_audio.gd")
 const Effects=preload("res://scripts/mine_challenge/mineral_effects.gd")
 var active := false
+@export var latch_on_activate:=false
 var _feedback:=0.0
 
 func interact() -> void:
-	if not WorldProgress.can_play(): return
+	if not WorldProgress.can_play() or (latch_on_activate and active): return
 	active=not active
 	_feedback=.3
 	Audio.play_near(self,&"lever",-1,.95 if active else .8)

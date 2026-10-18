@@ -11,6 +11,8 @@ func _ready() -> void:
 	WorldProgress.campaign_rules = false
 	GameSession.start_run()
 	WorldProgress.borrow_ability(&"light_blade")
+	for attack in [player.combat.close_attack,player.combat.reach_attack]:
+		attack.show_hitbox=true
 	player.get_node("Camera2D").enabled = false
 	player.position = Vector2(200, 596)
 	_add_solid(Rect2(0, 620, 1152, 100))

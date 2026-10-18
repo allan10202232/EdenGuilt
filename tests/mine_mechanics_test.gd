@@ -17,6 +17,7 @@ func _run() -> void:
 	var vent: Node=level.vents[0]
 	check(actor.health==80 and GameSession.health==80,"mine entrance preserves health from the previous chapter")
 	check(level._life_orbs.is_visible_in_tree() and level._life_orbs.get_half_count()==8,"custom mine HUD shows five green life vessels with inherited health")
+	await preload("res://tests/helpers/mine_learning.gd").acquire(level,get_tree())
 	actor.position=Vector2(860,1730)
 	actor.velocity=Vector2(90,-180)
 	var start_velocity:=actor.velocity
@@ -57,12 +58,12 @@ func _run() -> void:
 	actor.velocity=Vector2(0,300)
 	await ticks(18)
 	check(actor.position.distance_to(level.checkpoint_position)<6 and actor.respawn_seconds==0,"acid respawns at the current checkpoint within 0.3 seconds")
-	check(level.sequestered==stored_before and actor.health==100,"acid keeps captured carbon and restores playable health")
-	check(level._life_orbs.get_half_count()==10 and GameSession.health==100,"acid checkpoint retry restores all five vessels and shared campaign health")
+	check(level.sequestered==stored_before and actor.health==50,"acid keeps captured carbon and deducts one orb from injured health")
+	check(level._life_orbs.get_half_count()==5 and GameSession.health==50,"acid retry preserves shared health and the exact orb halves")
 	actor.dissolve()
-	check(level._life_orbs.get_half_count()==0 and GameSession.state==GameSession.State.PLAYING,"lethal acid empties mine health without triggering global Game Over")
+	check(level._life_orbs.get_half_count()==3 and GameSession.state==GameSession.State.PLAYING,"another acid fall removes another whole orb")
 	await ticks(18)
-	check(level._life_orbs.get_half_count()==10 and actor.health==100,"fast death and respawn visibly refill the life vessels")
+	check(level._life_orbs.get_half_count()==3 and actor.health==30,"fast retry never refills the life vessels")
 	level.bridge.trigger()
 	await ticks(90)
 	check(level.bridge.bodies[0].get_child(0).disabled and not level.bridge.bodies[3].get_child(0).disabled,"bridge collapses from left to right rather than all at once")
@@ -112,6 +113,7 @@ func _run() -> void:
 	level.weight_switch.crate.position=level.weight_switch.switch_offset+Vector2(0,-24)
 	await ticks(5)
 	for stage in range(3,9):
+		actor._set_health(100) # Isolate each checkpoint geometry from the five-fall life limit.
 		level.activate_stage(stage)
 		actor.position=Vector2(900,2055)
 		actor.velocity=Vector2(0,300)

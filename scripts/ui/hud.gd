@@ -9,10 +9,14 @@ var _settings_button: Button
 var _tutorial: Label
 var _tutorial_seconds := 0.0
 var _tutorial_source := ""
+var chapter_status: ChapterStatusHUD
+var _campaign_ui:=true
 
 
 
 func _ready() -> void:
+	var main_root:=find_parent("Main")
+	_campaign_ui=bool(main_root.get("campaign_mode")) if main_root!=null else WorldProgress.campaign_rules
 	_settings = SettingsPanelScript.new()
 	add_child(_settings)
 	_settings_button = Button.new()
@@ -62,6 +66,8 @@ func _ready() -> void:
 	WorldProgress.enemy_defeated.connect(func(_id: StringName) -> void: _update_progress())
 	WorldProgress.shield_changed.connect(func(_active: bool) -> void: _update_progress())
 	WorldProgress.notice_changed.connect(_show_notice)
+	GameSession.state_changed.connect(func(_previous: int,_current: int) -> void: _clear_tutorial())
+	WorldProgress.scene_requested.connect(func(_region: StringName) -> void: _clear_tutorial())
 
 	$Abilities.add_theme_stylebox_override(&"panel", GothicSkin.panel(0, 14))
 	$Hint.add_theme_stylebox_override(&"normal", StyleBoxEmpty.new())
@@ -73,6 +79,18 @@ func _ready() -> void:
 	_update_sound(SoundManager.muted)
 	_update_progress()
 	_show_notice(WorldProgress.notice)
+	if _campaign_ui:
+		chapter_status=ChapterStatusHUD.new()
+		add_child(chapter_status)
+		$Top.hide()
+		$CarbonDashboard.hide()
+		$ToxinStatus.hide()
+		_settings_button.reparent(self)
+		_settings_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		_settings_button.offset_left=-150
+		_settings_button.offset_right=-20
+		_settings_button.offset_top=20
+		_settings_button.offset_bottom=64
 	GameText.language_changed.connect(func() -> void:
 		_update_progress()
 		_update_health(GameSession.health,GameSession.max_health)
@@ -98,6 +116,8 @@ func _show_notice(text: String) -> void:
 
 
 func _process(delta: float) -> void:
+	if chapter_status!=null:
+		_update_chapter_status()
 	if WorldProgress.can_play():
 		_tutorial_seconds = maxf(0.0,_tutorial_seconds-delta)
 		if _tutorial_seconds <= 0.0: _offer_tutorial()
@@ -105,11 +125,32 @@ func _process(delta: float) -> void:
 	_notice_seconds = maxf(0.0, _notice_seconds-delta)
 	%Notice.modulate.a = minf(1.0, _notice_seconds)
 
+func _update_chapter_status() -> void:
+	var actor:=get_tree().get_first_node_in_group(&"player") as CharacterBody2D
+	if actor==null or not actor.get_parent() is CampaignLevel: return
+	var level: CampaignLevel=actor.get_parent()
+	var stage:=AbilityCatalog.region_name(WorldProgress.current_scene)
+	var detail:=""
+	if level is ScrapyardParkourLevel:
+		var info: Dictionary=ScrapyardLayout.SECTIONS[level.current_section]
+		stage="%d / 6  %s"%[level.current_section+1,ScrapyardLayout.text(info.name,info.zh)]
+		detail=ScrapyardLayout.text("Falls / rescues %d", "坠落 / 救援 %d")%WorldProgress.scrapyard_deaths
+	var jump:=GameText.t("二段跳就绪") if actor.air_jump_available() else GameText.t("二段跳已用 · 落台恢复") if WorldProgress.has_ability(&"double_jump") else GameText.t("二段跳未获得")
+	var skill:=GameText.t("靠近能力源按 E 吸取") if not WorldProgress.has_ability(level.definition.ability) else GameText.t("能力就绪")
+	var remaining:=0.0
+	var maximum:=1.0
+	if WorldProgress.has_ability(&"shield"):
+		skill=GameText.t("护盾冷却 %.1f 秒")%actor._shield_recovery if actor._shield_recovery>0 else GameText.t("护盾就绪")
+		remaining=actor._shield_recovery
+		maximum=2.2
+	if WorldProgress.route_open(level.definition.ability): skill=GameText.t("能力已交还 · 返程通路已开放")
+	chapter_status.show_status(stage,jump,skill,remaining,maximum,detail)
+
 
 func _update_progress() -> void:
 	# The first chapter uses this space for its six-section parkour status panel.
 	var parkour := WorldProgress.campaign_rules and WorldProgress.current_scene == &"lone_tree"
-	$CarbonDashboard.visible = not parkour
+	$CarbonDashboard.visible = not _campaign_ui
 	$Abilities.hide()
 	$RouteMap.hide()
 	%Notice.anchor_top = 1.0 if parkour else 0.0
@@ -210,6 +251,11 @@ func _offer(id: String, text: String) -> bool:
 	_tutorial_seconds = 8.0
 	return true
 
+func _clear_tutorial() -> void:
+	_tutorial_seconds=0
+	_tutorial_source=""
+	_tutorial.hide()
+
 func _offer_tutorial() -> void:
 	if not WorldProgress.campaign_rules: return
 	var actor := get_tree().get_first_node_in_group(&"player")
@@ -221,6 +267,7 @@ func _offer_tutorial() -> void:
 	if _offer("movement",movement_help): return
 	if WorldProgress.core_reversed and _offer("return","回到绿洲按 R，与居民共同修复并卸下能力。"): return
 	for id: StringName in [&"double_jump", &"mineralization", &"shield", &"black_pierce"]:
+		if id==&"mineralization" and WorldProgress.current_scene!=&"grassland": continue
 		if WorldProgress.has_ability(id):
 			var help := {&"double_jump":"空中再按空格二段跳 · 每次 +5 kg CO₂", &"mineralization":"靠近 I → II → III 节点按 C 固化 · 每次 +1 kg CO₂", &"shield":"按住 Q 展开护盾 · 每次 +20 kg CO₂", &"black_pierce":"F 短距穿梭，可穿敌人和暗壁 · 每次 +200 kg CO₂"}
 			if _offer(String(id),help[id]): return

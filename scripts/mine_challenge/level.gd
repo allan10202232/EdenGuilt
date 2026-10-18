@@ -48,6 +48,10 @@ var _campaign := false
 var _cleared := false
 var _persisted_valve := false
 var _returning := false
+var life_source: MineLifeSeam
+var extraction: LandExtraction
+var chapter_status: ChapterStatusHUD
+var _local_result: Control
 
 func _ready() -> void:
 	set_meta(&"custom_hud",true)
@@ -59,8 +63,6 @@ func _ready() -> void:
 		WorldProgress.current_scene=&"grassland"
 	WorldProgress.finish_scene_load()
 	_returning=WorldProgress.core_reversed
-	if not WorldProgress.has_ability(&"mineralization") and WorldProgress.ability_state(&"mineralization")==WorldProgress.AbilityState.UNAVAILABLE:
-		WorldProgress.borrow_ability(&"mineralization")
 	EdenInputBindings.configure()
 	if not InputMap.has_action(&"mine_pulse"):
 		InputMap.add_action(&"mine_pulse")
@@ -79,12 +81,21 @@ func _ready() -> void:
 	player.level=self
 	player.position=CHECKPOINTS[0]
 	add_child(player)
+	life_source=MineLifeSeam.new()
+	add_child(life_source)
+	life_source.setup(&"mineralization","mine",Vector2(420,1800))
+	extraction=LandExtraction.new()
+	add_child(extraction)
 	_read_progress()
 	_build_hud()
 	if not _campaign:
 		var subtitles:=preload("res://scripts/ui/dialogue.gd").new()
 		_hud.add_child(subtitles)
 		WorldProgress.dialogue_requested.connect(subtitles.present)
+		_local_result=preload("res://scenes/ui/result_dialog.tscn").instantiate()
+		_hud.add_child(_local_result)
+		_local_result.hide()
+		GameSession.state_changed.connect(_on_standalone_state)
 	if _returning:
 		_build_return_route()
 		current_stage=8
@@ -93,6 +104,9 @@ func _ready() -> void:
 	else:
 		activate_stage(current_stage,true)
 	GameText.language_changed.connect(_refresh_text)
+	WorldProgress.ability_absorbed.connect(func(id: StringName) -> void:
+		if id==&"mineralization": _tutorial_text(life_source.completion_notice())
+	)
 	_refresh_text()
 
 func _build_layout() -> void:
@@ -118,6 +132,7 @@ func _build_layout() -> void:
 	add_child(weight_switch)
 	weight_switch.valve_changed.connect(_set_shaft)
 	lever=LeverScene.instantiate()
+	lever.latch_on_activate=true
 	lever.position=Vector2(2820,720)
 	add_child(lever)
 	lever.redirected.connect(_redirect_gas)
@@ -184,7 +199,18 @@ func area(rect: Rect2, title: String) -> Area2D:
 	return node
 
 func activate_stage(stage: int, force: bool=false) -> void:
-	if _returning or (not force and (stage<=current_stage or stage>current_stage+1)): return
+	if _returning: return
+	var recovered_supply:=false
+	# The upper balcony can be walked off without using the drop hatch. Arriving
+	# at the real cliff proves the bridge was crossed, even if its trigger / lever
+	# was missed. Restore the local supply and checkpoint instead of softlocking.
+	if not force and stage==7 and current_stage in [5,6] and REGIONS[6].has_point(player.position):
+		if not lever.active:
+			lever.active=true
+			_redirect_gas(true)
+		current_stage=6
+		recovered_supply=true
+	if not force and (stage<=current_stage or stage>current_stage+1): return
 	if stage>=6 and not lever.active: return
 	current_stage=stage
 	if not force:
@@ -196,13 +222,16 @@ func activate_stage(stage: int, force: bool=false) -> void:
 	_refresh_text()
 	var id:="mine_stage_%d"%stage
 	if GuideScript.claim(id):
-		var hints=["Space: jump, then jump again. E / J: mineralization pulse.","Cast in mid-air to turn gas into a temporary bridge.","Push the crate onto the plate. Keep its weight there to power the shaft.","Jump, double jump, mineralize, land. Every relay is temporary gas-made rock.","T or left click: operate the lever. The hatch opens below it.","Keep moving! The bridge collapses from left to right.","Narrow platforms last 2.8 seconds. Land to refresh Double Jump.","Reach the illuminated doorway."]
+		var hints=["先到入口的潮湿矿脉按 E 吸取生命，获得碳矿化。","Cast in mid-air to turn gas into a temporary bridge.","Push the crate onto the plate. Keep its weight there to power the shaft.","Jump, double jump, mineralize, land. Every relay is temporary gas-made rock.","T or left click: operate the lever. The hatch opens below it.","Keep moving! The bridge collapses from left to right.","Narrow platforms last 2.8 seconds. Land to refresh Double Jump.","Reach the illuminated doorway."]
 		_tutorial_text(hints[stage-1])
+	if recovered_supply:
+		_tutorial_text("备用供气已恢复。矿化绿色毒雾，沿晶台向上攀登。")
 
 func stage_name() -> String:
 	return (STAGES_ZH if GameText.language=="zh_CN" else STAGES)[current_stage-1]
 
 func mineralize_near(origin: Vector2, radius: float) -> int:
+	if not WorldProgress.can_play() or not WorldProgress.has_ability(&"mineralization"): return 0
 	var count:=0
 	for node in vents:
 		if origin.distance_to(node.global_position)<=radius and node.mineralize(): count+=1
@@ -221,7 +250,7 @@ func _set_shaft(open: bool) -> void:
 	_save_progress()
 
 func _redirect_gas(active: bool) -> void:
-	for node in cliff_vents: node.set_powered(active)
+	for node in cliff_vents: node.set_powered(active and not _returning)
 	_trapdoor.get_child(0).set_deferred(&"disabled",active)
 	_save_progress()
 	queue_redraw()
@@ -233,10 +262,23 @@ func interact() -> void:
 		WorldProgress.request_dialogue(GameText.t("艾拉 · 矿工"),[GameText.t("捕获的二氧化碳与矿物反应，能形成固态碳酸盐。这就是碳矿化。"),GameText.t("矿化后的气柱能暂时承重。平台碎裂后，碳仍留在落下的矿石中。"),GameText.t("每次有效矿化模拟固定 150 kg CO₂e。数值是关卡教学模型。")])
 
 func restore_oasis() -> void:
-	if not _returning or player.position.distance_to(Vector2(280,1778))>150: return
+	if not _returning or player.position.distance_to(life_source.position)>150: return
 	WorldProgress.repair_current_region()
 	WorldProgress.return_ability(&"mineralization")
 	_tutorial_text("The mine is restored. Follow the ramp left to the Junkyard.")
+
+func try_extract() -> bool:
+	if WorldProgress.ability_state(&"mineralization")!=WorldProgress.AbilityState.UNAVAILABLE or player.position.distance_to(life_source.position)>140: return false
+	extraction.begin(player,life_source)
+	return true
+
+func _on_standalone_state(_previous: int,current: int) -> void:
+	if current==GameSession.State.GAME_OVER:
+		_local_result.present(GameSession.last_result)
+	elif current==GameSession.State.PLAYING:
+		get_tree().reload_current_scene.call_deferred()
+	elif current==GameSession.State.MAIN_MENU:
+		get_tree().change_scene_to_file.call_deferred("res://scenes/main.tscn")
 
 func reset_attempt() -> void:
 	for node in vents: node.reset()
@@ -283,47 +325,23 @@ func _build_return_route() -> void:
 
 func _build_hud() -> void:
 	var canvas:=CanvasLayer.new()
-	canvas.layer=12
+	canvas.layer=9
 	add_child(canvas)
 	_hud=Control.new()
 	_hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_hud.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	_hud.theme=preload("res://assets/ui_theme.tres")
 	canvas.add_child(_hud)
-	var panel:=PanelContainer.new()
-	panel.position=Vector2(20,18)
-	panel.custom_minimum_size=Vector2(390,180)
-	var style:=StyleBoxFlat.new()
-	style.bg_color=Color(0.025,0.05,0.055,0.84)
-	style.border_color=Color(0.38,0.66,0.65)
-	style.border_width_left=3
-	for side in [SIDE_LEFT,SIDE_TOP,SIDE_RIGHT,SIDE_BOTTOM]: style.set_content_margin(side,12)
-	panel.add_theme_stylebox_override(&"panel",GothicSkin.panel(0,12))
-	_hud.add_child(panel)
-	var box:=VBoxContainer.new()
-	box.add_theme_constant_override(&"separation",6)
-	panel.add_child(box)
-	_life_orbs=LifeOrbsScript.new()
-	_life_orbs.name="MineLifeOrbs"
-	box.add_child(_life_orbs)
-	_life_orbs.set_health(player.health,100)
-	player.health_changed.connect(_life_orbs.set_health)
-	_stage_label=label(box,"",17)
-	_jump_label=label(box,"",15)
-	_cooldown_label=label(box,"",13)
-	_cooldown=ProgressBar.new()
-	_cooldown.custom_minimum_size=Vector2(300,12)
+	chapter_status=ChapterStatusHUD.new()
+	_hud.add_child(chapter_status)
+	_life_orbs=chapter_status.life_orbs
+	_stage_label=chapter_status.stage_label
+	_jump_label=chapter_status.jump_label
+	_cooldown_label=chapter_status.skill_label
+	_cooldown=chapter_status.cooldown
 	_cooldown.max_value=0.6
-	_cooldown.show_percentage=false
-	var meter_background:=StyleBoxFlat.new()
-	meter_background.bg_color=Color(0.08,0.15,0.18)
-	var meter_fill:=StyleBoxFlat.new()
-	meter_fill.bg_color=Color(0.76,0.69,0.94)
-	_cooldown.add_theme_stylebox_override(&"background",meter_background)
-	_cooldown.add_theme_stylebox_override(&"fill",meter_fill)
-	box.add_child(_cooldown)
-	_carbon_label=label(box,"",20)
-	_health_label=label(box,"",13)
+	_carbon_label=chapter_status.carbon_label
+	_health_label=chapter_status.detail_label
 	var settings_button:=Button.new()
 	settings_button.text=GameText.t("设置")
 	settings_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -371,8 +389,9 @@ func _process(delta: float) -> void:
 		_jump_label.text=GameText.t("二段跳就绪") if player.jumps_used<2 else GameText.t("二段跳已用 · 落台恢复")
 		_cooldown.value=0.6-player.cooldown
 		_cooldown_label.text=GameText.t("矿化就绪") if player.cooldown<=0 else GameText.t("矿化冷却 %.1f 秒")%player.cooldown
-		_carbon_label.text=GameText.t("碳固定 %.0f kg CO₂e")%sequestered
-		_health_label.text=GameText.t("已矿化 %d 个气柱 · 生命 %d")%[vents_mineralized,player.health]
+		if not WorldProgress.has_ability(&"mineralization"):
+			_cooldown_label.text=GameText.t("靠近能力源按 E 吸取") if WorldProgress.ability_state(&"mineralization")==WorldProgress.AbilityState.UNAVAILABLE else GameText.t("能力已交还 · 返程通路已开放")
+		_health_label.text=GameText.t("已矿化 %d 个气柱")%vents_mineralized
 	queue_redraw()
 
 func _unhandled_input(event: InputEvent) -> void:

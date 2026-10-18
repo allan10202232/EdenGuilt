@@ -63,6 +63,14 @@ try {
     ) -LogPath $startupLog -Summary 'STARTUP'
     Write-Host "Startup configuration passed. Log: $startupLog"
 
+    $chapterLog = Join-Path $outputDirectory 'chapter-consistency.log'
+    $chapterArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $chapterLog)
+    if (-not $Screenshots) { $chapterArguments += '--headless' }
+    $chapterArguments += 'res://tests/chapter_consistency_test.tscn'
+    if ($Screenshots) { $chapterArguments += @('--', '--screenshots') }
+    Invoke-GodotCheck -EngineArguments $chapterArguments -LogPath $chapterLog -Summary 'CHAPTER_CONSISTENCY'
+    Write-Host 'Shared chapter HUD, limited fall retries and mine acquisition passed.'
+
     $parkourLog = Join-Path $outputDirectory 'parkour.log'
     $parkourArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $parkourLog)
     if ($Screenshots) { $parkourArguments += @('--rendering-method', 'gl_compatibility') }
@@ -87,7 +95,7 @@ try {
     Invoke-GodotCheck -EngineArguments $uiArguments -LogPath $uiLog -Summary 'UI REFRESH'
     Write-Host "Compact HUD, settings and first-use tutorials passed. Log: $uiLog"
 
-    foreach ($mineSuite in @(@('mine_mechanics_test', 'MINE MECHANICS'), @('mine_challenge_test', 'MINE CHALLENGE'), @('mine_polish_test', 'MINE POLISH'))) {
+    foreach ($mineSuite in @(@('mine_mechanics_test', 'MINE MECHANICS'), @('mine_supply_recovery_test', 'MINE SUPPLY'), @('mine_challenge_test', 'MINE CHALLENGE'), @('mine_polish_test', 'MINE POLISH'))) {
         $mineLog = Join-Path $outputDirectory ($mineSuite[0] + '.log')
         $mineArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $mineLog)
         if (-not $Screenshots) { $mineArguments += '--headless' }
@@ -95,6 +103,21 @@ try {
         Invoke-GodotCheck -EngineArguments $mineArguments -LogPath $mineLog -Summary $mineSuite[1]
     }
     Write-Host 'Eight-stage mine mechanics, normal-input route and return journey passed.'
+
+    $edenLog = Join-Path $outputDirectory 'eden-chapter.log'
+    $edenArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $edenLog)
+    if (-not $Screenshots) { $edenArguments += '--headless' }
+    $edenArguments += 'res://tests/eden_chapter_test.tscn'
+    if ($Screenshots) { $edenArguments += @('--', '--screenshots') }
+    Invoke-GodotCheck -EngineArguments $edenArguments -LogPath $edenLog -Summary 'EDEN_CHAPTER'
+    Write-Host 'Eden shield energy, reflections, phase dash, three-stage core and individual rescues passed.'
+
+    $edenRouteLog = Join-Path $outputDirectory 'eden-route.log'
+    Invoke-GodotCheck -EngineArguments @(
+        '--headless', '--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60',
+        '--log-file', $edenRouteLog, 'res://tests/eden_route_test.tscn'
+    ) -LogPath $edenRouteLog -Summary 'EDEN_ROUTE'
+    Write-Host 'Continuous input-driven Eden ascent, boss protocols and three-pod return rescue passed.'
 
     $openingLog = Join-Path $outputDirectory $(if ($Screenshots) { 'opening-visual.log' } else { 'opening-headless.log' })
     $openingArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $openingLog)

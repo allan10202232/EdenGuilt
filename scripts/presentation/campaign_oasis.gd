@@ -10,6 +10,14 @@ var artwork: Sprite2D
 var _clock := 0.0
 var _life_material: ShaderMaterial
 var _art_scale := Vector2.ONE
+var flow_width:=216.0
+var energy_color:=Color(0.65,1.0,0.5)
+
+func extraction_notice() -> String:
+	return GameText.t("正在抽取土地生命力……草木和泉水的生机正在汇入吸魂器。")
+
+func completion_notice() -> String:
+	return GameText.t("获得%s。眼前的绿洲已经枯竭；这份力量来自土地的生命。")%AbilityCatalog.definition(ability).name
 
 
 func setup(id: StringName, biome: String, ground: Vector2) -> void:

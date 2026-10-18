@@ -61,16 +61,18 @@ theme_override_constants/separation = 40
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-theme_override_constants/separation = 20
+theme_override_constants/separation = 16
 
 [node name="Eyebrow" type="Label" parent="Margin/Columns/Identity"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 text = "E D E N G U I L T    ·    遗 庭"
+autowrap_mode = 3
 
 [node name="Title" type="Label" parent="Margin/Columns/Identity"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 64
+theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_shadow_color = Color(0.1, 0.04, 0.02, 1)
 theme_override_constants/shadow_offset_y = 4
@@ -81,15 +83,19 @@ layout_mode = 2
 
 [node name="Description" type="Label" parent="Margin/Columns/Identity"]
 layout_mode = 2
-text = "你获得的每一份力量，都留下一笔账。\n伊甸城的春天，究竟由谁承担？\n\n垃圾场  /  毒雾矿洞  /  伊甸城"
+text = "你获得的每一份力量，都留下一笔账。\n伊甸城的春天，究竟由谁承担？\n\n垃圾场  /  毒雾矿坑  /  伊甸城"
+theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_constants/line_spacing = 10
+theme_override_constants/line_spacing = 6
+autowrap_mode = 3
 
 [node name="Build" type="Label" parent="Margin/Columns/Identity"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_constants/line_spacing = 4
 text = "力量终有代价，归途仍待有人同行。\n三幕旅途  ·  两种抉择  ·  一份留给世界的账本"
+autowrap_mode = 3
 
 [node name="Panel" type="PanelContainer" parent="Margin/Columns"]
 custom_minimum_size = Vector2(430, 0)

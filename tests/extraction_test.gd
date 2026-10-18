@@ -20,6 +20,8 @@ func _ready() -> void:
 func _run() -> void:
 	GameText.set_language("en", false)
 	_app = preload("res://scenes/main.tscn").instantiate()
+	# Historical horizontal Eden fixture; production four-floor Eden has its own route suite.
+	_app.eden_scene=preload("res://tests/fixtures/legacy_eden_room.tscn")
 	# Original controller / oasis fixture; production mine has its own route test.
 	_app.mine_scene=preload("res://tests/fixtures/legacy_mineralization_room.tscn")
 	add_child(_app)

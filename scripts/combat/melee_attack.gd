@@ -13,7 +13,7 @@ enum Phase { IDLE, WINDUP, ACTIVE, RECOVERY, COOLDOWN }
 @export var profile: MeleeAttackProfile
 @export_flags_2d_physics var target_mask: int = 4
 @export_flags_2d_physics var obstruction_mask: int = 1
-@export var show_hitbox: bool = true
+@export var show_hitbox: bool = false
 @export var show_placeholder_weapon: bool = true
 
 var phase: Phase = Phase.IDLE
