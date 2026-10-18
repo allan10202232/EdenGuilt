@@ -2,7 +2,7 @@ extends Control
 
 
 func _process(_delta: float) -> void:
-	visible = CarbonLedger.enabled and not WorldProgress.campaign_rules
+	visible = false
 	queue_redraw()
 
 

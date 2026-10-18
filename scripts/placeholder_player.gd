@@ -48,6 +48,8 @@ var grounding: ActorGrounding
 
 
 func _ready() -> void:
+	floor_snap_length=8
+	platform_on_leave=CharacterBody2D.PLATFORM_ON_LEAVE_ADD_UPWARD_VELOCITY
 	combat.setup(self, _can_melee_attack)
 	combat.attack_started.connect(func(_move: MeleeAttackProfile) -> void:
 		# Attacking lowers the guard; holding Q cannot resurrect a cancelled cast.

@@ -156,6 +156,7 @@ func _ticks(count: int) -> void:
 			for enemy in _level().enemies:
 				if is_instance_valid(enemy) and enemy.is_on_floor(): enemy.set_physics_process(false)
 		await get_tree().physics_frame
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0: await get_tree().physics_frame
 	await get_tree().process_frame
 func _capture(label: String) -> void:
 	if not "--screenshots" in OS.get_cmdline_user_args(): return

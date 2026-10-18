@@ -255,6 +255,9 @@ func level() -> Node2D: return app.get_node("LevelRoot").get_child(0)
 func player() -> CharacterBody2D: return level().player
 func ticks(count: int) -> void:
 	for frame in count: await get_tree().physics_frame
+	# Scene navigation now includes a visible fade and a short re-entry lock.
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0:
+		await get_tree().physics_frame
 	await get_tree().process_frame
 func check(ok: bool, message: String) -> void:
 	checks+=1

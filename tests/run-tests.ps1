@@ -57,6 +57,12 @@ try {
     ) -LogPath $importLog
 
     $startupLog = Join-Path $outputDirectory 'startup.log'
+    $navigationLog = Join-Path $outputDirectory 'navigation.log'
+    Invoke-GodotCheck -EngineArguments @(
+        '--headless', '--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60',
+        '--log-file', $navigationLog, 'res://tests/navigation_system_test.tscn'
+    ) -LogPath $navigationLog -Summary 'NAVIGATION'
+    Write-Host 'Room round trips, doors, physical elevator carry and skills passed.'
     Invoke-GodotCheck -EngineArguments @(
         '--headless', '--path', $projectDirectory, '--audio-driver', 'Dummy',
         '--log-file', $startupLog, 'res://tests/startup_test.tscn'
@@ -126,7 +132,7 @@ try {
     Write-Host 'Continuous input-driven Eden ascent, boss protocols and three-pod return rescue passed.'
 
     $openingLog = Join-Path $outputDirectory $(if ($Screenshots) { 'opening-visual.log' } else { 'opening-headless.log' })
-    $openingArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $openingLog)
+    $openingArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $openingLog)
     if ($Screenshots) {
         $openingArguments += @('--rendering-method', 'gl_compatibility')
     } else {

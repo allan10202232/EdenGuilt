@@ -138,6 +138,9 @@ func _player() -> CharacterBody2D:
 	return _level().player
 func _ticks(count: int) -> void:
 	for index in count: await get_tree().physics_frame
+	# Scene navigation now includes a visible fade and a short re-entry lock.
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0:
+		await get_tree().physics_frame
 	await get_tree().process_frame
 func _place(point: Vector2) -> void:
 	_player().position=point

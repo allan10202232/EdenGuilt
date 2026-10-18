@@ -34,7 +34,7 @@ func _ready() -> void:
 	margin.add_child(content)
 	var heading_row:=HBoxContainer.new()
 	content.add_child(heading_row)
-	var header:=_label(heading_row,GameText.t("──  旅途终卷  ·  玩家个人可持续行为审计  ──"),14,GothicSkin.GOLD)
+	var header:=_label(heading_row,"感谢游玩 · 旅途终卷 · 可持续行为审计" if GameText.language=="zh_CN" else "THANK YOU FOR PLAYING · SUSTAINABILITY AUDIT",14,GothicSkin.GOLD)
 	header.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	heading_row.add_child(LanguagePicker.new())
 	_heading=_label(content,"",30)

@@ -3,12 +3,13 @@ extends Node2D
 ## Presentation transaction: no capability or depleted land is committed mid-action.
 
 const DURATION := 2.4
+const OasisScript = preload("res://scripts/presentation/campaign_oasis.gd")
 
 var active := false
 var progress := 0.0
 var _elapsed := 0.0
 var _player: CharacterBody2D
-var _oasis: CampaignOasis
+var _oasis: OasisScript
 var _ability: StringName
 var _region: StringName
 var _success_flash := 0.0
@@ -20,7 +21,7 @@ func _init() -> void:
 	set_process(false)
 
 
-func begin(actor: CharacterBody2D, oasis: CampaignOasis) -> bool:
+func begin(actor: CharacterBody2D, oasis: OasisScript) -> bool:
 	if active or not WorldProgress.can_play() or WorldProgress.ability_state(oasis.ability) != WorldProgress.AbilityState.UNAVAILABLE:
 		return false
 	if not actor.is_on_floor():

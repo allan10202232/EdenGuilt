@@ -57,13 +57,12 @@ func _run() -> void:
 	check(level.definition.background_shade.is_equal_approx(Color(0.08,0.075,0.025,0.08)),"scrapyard retains the branch's warm low-opacity background tone")
 	for enemy in level.enemies: enemy.set_physics_process(false)
 	check(not hud.get_node("Abilities").visible and not hud.get_node("RouteMap").visible,"ability strip and route map are hidden")
-	check(not hud.get_node("%MuteButton").visible and hud._settings_button.visible,"one settings entry replaces utility controls")
+	check(not hud.get_node("%MuteButton").visible and not hud._settings_button.visible,"gameplay utility buttons are absent; Escape opens settings")
 	check(not hud.get_node("Hint").text.contains(" E "),"objective has no key tutorial")
-	check((hud._tutorial_source.contains("A/D") and hud._tutorial.visible) if not movement_seen else not hud._tutorial_source.contains("A/D"),"movement tutorial respects saved preferences")
+	check(not hud._tutorial.visible and hud.chapter_status.minimap.is_visible_in_tree(),"only health and the objective map persist during gameplay")
 	check(not hud._tutorial_source.contains("Shift") and not hud._tutorial_source.contains("长按"),"scrapyard movement tutorial matches its fixed jump and disabled sprint")
-	check(not FirstUseGuideScript.claim("movement"),"tutorial is shown only once")
-	var disk:=ConfigFile.new()
-	check(disk.load("user://tutorial_seen.cfg")==OK and disk.get_value("seen","movement",false),"tutorial progress persists to disk")
+	check(FirstUseGuideScript.seen("movement")==movement_seen,"removing tutorial overlays does not mark unseen instructions as read")
+	check(not hud.get_node("Hint").is_visible_in_tree() and not hud.get_node("%Notice").is_visible_in_tree(),"extra objectives and scrolling HUD notices are removed")
 	await capture("ui-clean-before")
 	hud._settings.open()
 	check(hud._settings._controls.text.contains("fixed height in Junkyard / Mine"),"settings explains the chapter-specific jump profiles")
@@ -124,7 +123,7 @@ func _run() -> void:
 	await ticks(3)
 	GameSession.start_run()
 	await ticks(4)
-	check(not FirstUseGuideScript.claim("movement"),"new run retains seen tutorials")
+	check(FirstUseGuideScript.seen("movement")==movement_seen,"new run preserves the saved tutorial preference")
 	GameSession.return_to_menu()
 	await ticks(3)
 	SoundManager.stop_sfx()
@@ -137,6 +136,9 @@ func check(value: bool,message: String) -> void:
 	print(("PASS: " if value else "FAIL: ")+message)
 func ticks(count: int) -> void:
 	for i in count: await get_tree().physics_frame
+	# Scene navigation now includes a visible fade and a short re-entry lock.
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0:
+		await get_tree().physics_frame
 	await get_tree().process_frame
 func capture(name: String) -> void:
 	if DisplayServer.get_name()=="headless": return

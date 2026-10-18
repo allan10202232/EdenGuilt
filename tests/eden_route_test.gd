@@ -87,7 +87,7 @@ func _run() -> void:
 	check(WorldProgress.eden_chapter.get("steward",false),"ordinary melee completes the Garden Steward encounter")
 	await move_to(2225)
 	await key(KEY_T)
-	await ticks(80)
+	await wait_lift()
 	check(level.current_node==5,"the actual elevator links 2F and 3F")
 	await key(KEY_E)
 	await ticks(150)
@@ -186,11 +186,12 @@ func _run() -> void:
 	await drop()
 	await wait_floor()
 	await move_to(2240)
+	await wait_floor()
 	await key(KEY_T)
-	await ticks(5)
+	await wait_lift()
 	check(hero.position.y>1800,"return elevator descends to the garden")
-	await jump_to(Vector2(2260,1780),null,true)
-	await move_to(2240)
+	await jump_to(Vector2(2320,1780))
+	await move_to(2310)
 	await parry_incoming(level.turrets[-1],1)
 	check(level.pods[2].released and CarbonLedger.rescued_people==3,"double jump, phase dash and ricochet free the third and last human")
 	await drop()
@@ -340,7 +341,13 @@ func ticks(count: int) -> void:
 		frame_index+=1
 		if GameSession.state==GameSession.State.GAME_OVER:
 			check(false,"input route exhausted its actual life orbs")
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0: await get_tree().physics_frame
 	await get_tree().process_frame
+
+func wait_lift() -> void:
+	for index in 300:
+		await ticks(1)
+		if not level.elevator.is_moving(): break
 
 func check(ok: bool,message: String) -> void:
 	checks+=1

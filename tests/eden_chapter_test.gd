@@ -33,7 +33,7 @@ func _run() -> void:
 	check(level.interaction_hints.visible_keys().has("T"),"approaching a city display shows the preserved circular T hint")
 	await place(EdenBlueprint.ENTRY)
 	check(hero.health==90 and hero.stats.health==90 and level.chapter_status.life_orbs.get_half_count()==9,"mine injuries survive the chapter handoff and match the shared HUD")
-	check(level.chapter_status.position==Vector2(20,18) and not app._hud.visible,"Eden keeps the shared mine-style status panel without a duplicate HUD")
+	check(level.chapter_status.life_orbs.position==Vector2(24,22) and not app._hud.visible,"Eden keeps the shared leaf health display without a duplicate HUD")
 	check(EdenBlueprint.NODES.size()==12 and level.pods.size()==3 and level.vents.size()==9,"four floors contain twelve numbered nodes, exactly three pods and nine temporary gas relays")
 	check(hero.speed==260 and hero.gravity==980 and hero.jump_velocity== -420 and hero.double_jump_velocity== -390 and hero.coyote_time==0.12 and hero.jump_buffer==0.12,"Eden physics use the requested independent chapter configuration")
 	check(WorldProgress.has_ability(&"double_jump") and WorldProgress.has_ability(&"mineralization") and not WorldProgress.has_ability(&"shield") and not WorldProgress.has_ability(&"black_pierce"),"previous skills are retained while the two Eden skills must be extracted")
@@ -144,7 +144,7 @@ func _run() -> void:
 	check(WorldProgress.eden_chapter.get("steward",false) and level.current_node==4,"actual left and right mouse hits defeat the exposed mini-boss and unlock node 04")
 	await place(Vector2(2240,1898))
 	level.interact()
-	await ticks(80)
+	await wait_lift()
 	check(level.current_node==5 and hero.position.y<1350,"the ascension elevator physically delivers the player to processing floor 3F")
 	await action(&"eden_absorb")
 	await ticks(151)
@@ -267,7 +267,7 @@ func _run() -> void:
 	# Same position as the screenshot: near the platform's right edge, not exactly
 	# on the numbered entrance marker. The visible hint and the exit share a radius.
 	await place(EdenBlueprint.ENTRY+Vector2(140,0))
-	check(level._entrance_hint.visible and level._objective.text.contains("R: repair"),"three rescued residents receive a persistent R-then-T exit hint at the right edge of 1F")
+	check(not level._entrance_hint.visible and level.interaction_hints.visible_keys().has("R"),"three rescued residents use the nearby circular R hint instead of an extra persistent panel")
 	await key(KEY_T)
 	check(WorldProgress.current_scene==&"remnant_sea" and not WorldProgress.eden_chapter.get("escaped",false) and level._notice.text.contains("Press R"),"T before repair explains the missing R step instead of reopening the city display")
 	var return_health:=GameSession.health
@@ -335,7 +335,15 @@ func action(id: StringName) -> void:
 
 func ticks(count: int) -> void:
 	for frame in count: await get_tree().physics_frame
+	# Scene navigation now includes a visible fade and a short re-entry lock.
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0:
+		await get_tree().physics_frame
 	await get_tree().process_frame
+
+func wait_lift() -> void:
+	for index in 300:
+		await ticks(1)
+		if not level.elevator.is_moving(): break
 
 func mouse(button: MouseButton) -> void:
 	var event:=InputEventMouseButton.new()

@@ -1,5 +1,5 @@
 class_name MineLifeSeam
-extends CampaignOasis
+extends "res://scripts/presentation/campaign_oasis.gd"
 ## A living lichen seam rooted in the mine's own ore and timber, not a garden.
 const Art=preload("res://scripts/mine_challenge/mine_art.gd")
 var _crystals: Sprite2D

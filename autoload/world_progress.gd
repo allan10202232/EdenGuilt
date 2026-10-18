@@ -22,6 +22,9 @@ var spawn_position := Vector2(100, 560)
 var returning: bool = false
 var shield_active: bool = false
 var transitioning: bool = false
+var scene_transition_active:=false
+var pending_transition: Dictionary={}
+var transition_rearm_seconds:=0.0
 var campaign_rules: bool = true
 var narrative_active: bool = false
 var narrative_kind: StringName = &""
@@ -46,6 +49,9 @@ var eden_chapter: Dictionary = {}
 func _ready() -> void:
 	reset_run()
 
+func _process(delta: float) -> void:
+	transition_rearm_seconds=maxf(0,transition_rearm_seconds-delta)
+
 
 func reset_run() -> void:
 	current_scene = &"lone_tree"
@@ -53,6 +59,9 @@ func reset_run() -> void:
 	returning = false
 	shield_active = false
 	transitioning = false
+	scene_transition_active=false
+	pending_transition.clear()
+	transition_rearm_seconds=0
 	narrative_active = false
 	narrative_kind = &""
 	extraction_active = false
@@ -162,10 +171,11 @@ func set_shield_active(active: bool) -> void:
 		shield_changed.emit(next)
 
 
-func enter_scene(scene_id: StringName, at_position: Vector2) -> bool:
-	if not can_play() or not AbilityCatalog.REGIONS.has(scene_id) or scene_id == current_scene:
+func enter_scene(scene_id: StringName, at_position: Vector2,options: Dictionary={}) -> bool:
+	if not can_play() or transition_rearm_seconds>0 or not AbilityCatalog.REGIONS.has(scene_id) or scene_id == current_scene:
 		return false
 	transitioning = true
+	pending_transition=options.duplicate(true)
 	set_shield_active(false)
 	current_scene = scene_id
 	spawn_position = at_position
@@ -179,6 +189,10 @@ func enter_scene(scene_id: StringName, at_position: Vector2) -> bool:
 
 func finish_scene_load() -> void:
 	transitioning = false
+
+func confirm_arrival(point: Vector2) -> void:
+	spawn_position=point
+	_checkpoint.position=point
 
 
 func restore_checkpoint() -> bool:
@@ -253,7 +267,7 @@ func is_collected(id: StringName) -> bool:
 
 
 func can_play() -> bool:
-	return GameSession.state == GameSession.State.PLAYING and not transitioning and not narrative_active and not extraction_active
+	return GameSession.state == GameSession.State.PLAYING and not transitioning and not scene_transition_active and not narrative_active and not extraction_active
 
 
 func reveal_truth() -> bool:

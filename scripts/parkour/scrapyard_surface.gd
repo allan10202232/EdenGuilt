@@ -12,17 +12,14 @@ static func deck(canvas: CanvasItem, rect: Rect2, seed: float, warning := false,
 	var top := rect.position
 	# A continuous readable lip matches the physical top; scrap hangs below it.
 	canvas.draw_rect(Rect2(top + Vector2(0,2),Vector2(width,16)),Color("30382e"))
-	var segment := 0
 	var x := 0.0
 	while x < width:
-		var length := minf(120, width-x)
-		var sample_width := length * 2.8
-		var sample_x := floorf(fposmod(seed*31.0+segment*217.0,1254.0-sample_width))
-		var variant := posmod(int(seed)+segment,2)
-		var source := Rect2(sample_x,789 if variant==0 else 1046,sample_width,180)
-		canvas.draw_texture_rect_region(TERRAIN,Rect2(top+Vector2(x,-3),Vector2(length,64)),source,Color(0.88,0.86,0.72))
+		# One continuous authored lip. Random crops previously sampled transparent
+		# gaps and mixed two different platform scales on the same collision deck.
+		var length := minf(313.5,width-x)
+		var source := Rect2(0,1046,length*4,160)
+		canvas.draw_texture_rect_region(TERRAIN,Rect2(top+Vector2(x,0),Vector2(length,40)),source,Color(0.94,0.93,0.85))
 		x += length
-		segment += 1
 	canvas.draw_line(top,top+Vector2(width,0),Color("efaf65") if warning else EDGE,2)
 	for stud in range(6,int(width)-3,22):
 		var point := top+Vector2(stud,8)
@@ -33,7 +30,7 @@ static func deck(canvas: CanvasItem, rect: Rect2, seed: float, warning := false,
 		canvas.draw_rect(Rect2(top,Vector2(width,17)),Color(1,0.46,0.13,0.24))
 		for crack in range(16,int(width),33):
 			canvas.draw_polyline(PackedVector2Array([top+Vector2(crack,0),top+Vector2(crack-3,7),top+Vector2(crack+3,10),top+Vector2(crack,17)]),Color("ffbd71"),2)
-	if style==&"appliance": appliance(canvas,rect,seed)
+	# Moving and stationary decks deliberately share this exact timber/scrap lip.
 
 static func appliance(canvas: CanvasItem, rect: Rect2, seed: float) -> void:
 	var top := rect.position+Vector2(10,20)

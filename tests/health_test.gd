@@ -31,7 +31,7 @@ func _run() -> void:
 	WorldProgress.enter_scene(&"grassland",Vector2(140,596))
 	await _physics(10)
 	_check(_orbs().get_half_count() == 10, "campaign starts with five full life orbs")
-	_check(_hud().get_node("%HealthLabel").text == "生命", "health is displayed without a numeric fraction")
+	_check(not _hud().get_node("%HealthLabel").is_visible_in_tree(), "health is shown as leaves without a numeric label")
 	await _capture("health-01-full")
 	_player().hurt()
 	_check(GameSession.health == 90, "one actual hit costs exactly half an orb")
@@ -91,7 +91,7 @@ func _hud() -> Control:
 
 
 func _orbs() -> LifeOrbs:
-	return _hud().get_node("%LifeOrbs") as LifeOrbs
+	return _hud().chapter_status.life_orbs
 
 
 func _capture(label: String) -> void:
@@ -107,6 +107,7 @@ func _capture(label: String) -> void:
 func _physics(count: int) -> void:
 	for index in count:
 		await get_tree().physics_frame
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0: await get_tree().physics_frame
 	await get_tree().process_frame
 
 

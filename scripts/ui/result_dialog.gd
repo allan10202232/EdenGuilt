@@ -23,7 +23,7 @@ func present(result: Dictionary) -> void:
 	%Summary.text = GameText.t("得分  %04d\n剩余生命  %s\n用时  %.1f 秒") % [
 		result.get("score", 0), life_text, result.get("elapsed_seconds", 0.0),
 	]
-	if result.has("audit"):
+	if won and result.has("audit"):
 		%Summary.text+=GameText.t("\n累计排放 %.2f kg CO₂ · 已固定 %.2f kg")%[result.audit.gross_kg,result.audit.stored_kg]
 	%CheckpointButton.visible = not won
 	%CheckpointButton.text = GameText.t("从%s检查点继续") % GameText.t(result.get("checkpoint", GameText.t("孤木")))

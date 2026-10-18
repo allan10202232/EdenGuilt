@@ -1,8 +1,11 @@
 class_name ChapterStatusHUD
-extends PanelContainer
-## One mine-style status panel for every production chapter.
+extends Control
+## The only persistent gameplay UI: leaf health and an objective map.
+const MapScript=preload("res://scripts/ui/objective_minimap.gd")
+var minimap: Control
 
 var life_orbs: LifeOrbs
+# Hidden compatibility handles for existing chapter logic and fixture tooling.
 var stage_label: Label
 var jump_label: Label
 var skill_label: Label
@@ -13,18 +16,20 @@ var detail_label: Label
 
 func _ready() -> void:
 	name="ChapterStatus"
-	position=Vector2(20,18)
-	custom_minimum_size=Vector2(390,180)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	theme=preload("res://assets/ui_theme.tres")
-	add_theme_stylebox_override(&"panel",GothicSkin.panel(0,12))
 	var rows:=VBoxContainer.new()
-	rows.add_theme_constant_override(&"separation",6)
+	rows.hide()
 	rows.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	add_child(rows)
 	life_orbs=LifeOrbs.new()
 	life_orbs.name="LifeOrbs"
-	rows.add_child(life_orbs)
+	life_orbs.position=Vector2(24,22)
+	life_orbs.size=life_orbs.custom_minimum_size
+	add_child(life_orbs)
+	minimap=MapScript.new()
+	add_child(minimap)
 	stage_label=_label(rows,17)
 	jump_label=_label(rows,15)
 	skill_label=_label(rows,13)
@@ -64,7 +69,3 @@ func show_status(stage: String,jump: String,skill: String,remaining: float,maxim
 	cooldown.value=maxf(0.0,maximum-remaining)
 	detail_label.text=detail
 	detail_label.show()
-
-func _process(_delta: float) -> void:
-	carbon_label.text=GameText.t("累计排放 %.1f kg CO₂")%CarbonLedger.gross_kg
-	storage_label.text=GameText.t("碳固定 %.0f kg CO₂e")%CarbonLedger.stored_kg

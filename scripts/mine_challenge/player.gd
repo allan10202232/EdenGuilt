@@ -48,6 +48,8 @@ var _footstep_clock := 0.0
 var _resonance_light := 0.0
 
 func _ready() -> void:
+	floor_snap_length=8
+	platform_on_leave=CharacterBody2D.PLATFORM_ON_LEAVE_ADD_UPWARD_VELOCITY
 	# Preserve injuries when moving between campaign chapters.
 	health=clampi(GameSession.health,1,100)
 	add_to_group(&"player")

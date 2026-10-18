@@ -306,11 +306,13 @@ func _at_source(action: StringName) -> void:
 func _frames(count: int) -> void:
 	for _index in count:
 		await get_tree().process_frame
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0: await get_tree().process_frame
 
 
 func _physics_frames(count: int) -> void:
 	for _index in count:
 		await get_tree().physics_frame
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0: await get_tree().physics_frame
 	await get_tree().process_frame
 
 

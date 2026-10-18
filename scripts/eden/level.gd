@@ -48,7 +48,7 @@ var _local_choice: Control
 var _local_result: Control
 var _followers: Array[Node2D]=[]
 var _oren: Node2D
-var _elevator_seconds:=0.0
+var elevator: OpenElevator
 var _entrance_hint: Label
 var interaction_hints: Node2D
 const EXIT_RADIUS:=250.0
@@ -70,13 +70,23 @@ func _ready() -> void:
 	current_node=WorldProgress.eden_chapter.get("node",1)
 	checkpoint_position=WorldProgress.eden_chapter.get("checkpoint",EdenBlueprint.ENTRY)
 	EdenInputBindings.configure()
-	for rect: Rect2 in EdenBlueprint.DECKS: deck(rect)
+	for rect: Rect2 in EdenBlueprint.DECKS:
+		# A real, open shaft: the moving deck must not pass through static floors.
+		if rect.position.y==1780:
+			# Keep the rescue/parry perch beside the shaft rather than inside it.
+			deck(Rect2(2296,1780,94,28))
+			continue
+		if rect.position.y in [1920.0,1320.0,1780.0] and rect.end.x>2184:
+			if rect.position.x<2184: deck(Rect2(rect.position,Vector2(2184-rect.position.x,rect.size.y)))
+			if rect.end.x>2296: deck(Rect2(2296,rect.position.y,rect.end.x-2296,rect.size.y))
+		else: deck(rect)
 	player=EdenChapterPlayer.new()
 	player.name="Player"
 	player.level=self
 	player.position=checkpoint_position
 	add_child(player)
 	_build_interactions()
+	_build_elevator()
 	boss=EdenHeartBoss.new()
 	boss.level=self
 	boss.position=Vector2(1200,360)
@@ -126,6 +136,26 @@ func deck(rect: Rect2) -> void:
 	collision.one_way_collision=true
 	body.add_child(collision)
 	add_child(body)
+
+func _build_elevator() -> void:
+	elevator=preload("res://scenes/movement/open_elevator.tscn").instantiate()
+	elevator.name="AscensionElevator"
+	elevator.position=Vector2(2240,1920)
+	elevator.platform_width=96
+	elevator.top_position=Vector2(0,-600)
+	elevator.move_speed=260
+	elevator.handle_input=false
+	elevator.start_at_top=current_node>=5
+	add_child(elevator)
+	elevator.movement_started.connect(func(up: bool) -> void:
+		if up and not WorldProgress.returning:
+			pods[2].play_seal()
+			tell("The hoist is rising. You can move and jump freely.","升降台正在上升，可以自由移动或跳离。")
+	)
+	elevator.arrived.connect(func(at_top: bool) -> void:
+		if at_top and elevator.is_rider(player) and not WorldProgress.returning:
+			advance(5,Vector2(2240,1298))
+	)
 
 func _wall(point: Vector2,size: Vector2,gate: bool=false) -> EdenPhaseWall:
 	var wall:=EdenPhaseWall.new()
@@ -251,13 +281,13 @@ func _build_interactions() -> void:
 		var pod:=EdenCultivationPod.new()
 		pod.level=self
 		pod.pod_id=index+1
-		pod.position=[Vector2(2140,265),Vector2(1910,1050),Vector2(2240,1765)][index]
+		pod.position=[Vector2(2140,265),Vector2(1910,1050),Vector2(2330,1765)][index]
 		add_child(pod)
 		pods.append(pod)
 	# Right-side bio-locks face the player, leaving a clear return parry lane.
 	_turret(Vector2(2320,235),Vector2.LEFT,2.4).active=false
 	_turret(Vector2(1690,1010),Vector2.RIGHT,1.6).active=false
-	_turret(Vector2(2370,1735),Vector2.LEFT,2.4).active=false
+	_turret(Vector2(2390,1735),Vector2.LEFT,2.4).active=false
 	_label(Vector2(70,2470),EdenBlueprint.text("TOXIC DROP · ONE VESSEL LOST","坠落危险 · 扣一整颗生命球"),15)
 
 func _check_mirrors() -> void:
@@ -344,6 +374,10 @@ func tell(en: String,zh: String) -> void:
 	_notice.text=EdenBlueprint.text(en,zh)
 	_notice_left=6
 
+func _speak(en: String,zh: String) -> void:
+	tell(en,zh)
+	WorldProgress.request_dialogue(EdenBlueprint.text("Eden City","伊甸城"),[EdenBlueprint.text(en,zh)])
+
 func advance(index: int,point: Vector2) -> void:
 	if index<=current_node or WorldProgress.returning: return
 	current_node=index
@@ -380,29 +414,24 @@ func interact(allow_dialogue: bool=true) -> void:
 		else:
 			tell("Rescue all 3 cultivation pods before returning to the mine: %d / 3 freed."%CarbonLedger.rescued_people,"先救齐三个培养舱，再返回矿坑：当前 %d / 3 人。"%CarbonLedger.rescued_people)
 		return
-	if p.distance_to(Vector2(2240,1898))<130 and WorldProgress.eden_chapter.get("steward",false):
-		if WorldProgress.returning:
-			if pods[1].released: player.reset_at_checkpoint(Vector2(2240,1898))
-		else:
-			_elevator_seconds=1.2
-			pods[2].play_seal()
-			WorldProgress.narrative_active=true
-			WorldProgress.narrative_kind=&"eden_lift"
-			player.velocity=Vector2.ZERO
-			tell("Your friend is sealed in the transport pod. The gate opens for you alone.","你的朋友被封进运输培养舱。闸门只为你一个人打开。")
-		return
-	if WorldProgress.returning and p.distance_to(Vector2(2240,1298))<130 and pods[1].released:
-		player.reset_at_checkpoint(Vector2(2080,1898))
-		checkpoint_position=player.position
-		return
+	if allow_dialogue and WorldProgress.eden_chapter.get("steward",false):
+		if elevator.is_rider(player):
+			elevator.activate()
+			return
+		if p.distance_to(Vector2(2240,1898))<130:
+			elevator.call_to_stop(false)
+			return
+		if p.distance_to(Vector2(2240,1298))<130:
+			elevator.call_to_stop(true)
+			return
 	if not allow_dialogue: return
 	if p.y>2200:
 		if p.x>1450:
-			tell("CITY DISPLAY: Zero emissions inside our walls. Imports and life extraction excluded.","城市公示：城界内零排放。外部开采与生命抽取不计入。")
+			_speak("CITY DISPLAY: Zero emissions inside our walls. Imports and life extraction excluded.","城市公示：城界内零排放。外部开采与生命抽取不计入。")
 		elif p.x>800:
-			tell("TREE OF LIFE: Its roots disappear beneath the marble. No public map shows where they lead.","生命之树：树根消失在白石地面下。没有一张公开地图画出它们通向哪里。")
+			_speak("TREE OF LIFE: Its roots disappear beneath the marble. No public map shows where they lead.","生命之树：树根消失在白石地面下。没有一张公开地图画出它们通向哪里。")
 		else:
-			tell("ASCENSION NOTICE: Healthy candidates are selected each year. All letters are held until arrival.","荣升告示：每年选拔生命力旺盛的候选人。来往信件暂存，抵达后发放。")
+			_speak("ASCENSION NOTICE: Healthy candidates are selected each year. All letters are held until arrival.","荣升告示：每年选拔生命力旺盛的候选人。来往信件暂存，抵达后发放。")
 	elif current_node==2:
 		tell("Hold Q / K to block. Tap just before impact: reflected light powers all 3 receivers.","按住 Q / K 格挡；命中前短按可弹反。跳起对准三个接收器。")
 
@@ -484,7 +513,7 @@ func _near_entrance() -> bool:
 func _leave_to_mine() -> void:
 	if _leaving or not WorldProgress.can_play() or not WorldProgress.eden_chapter.get("escaped",false) or not _near_entrance(): return
 	_leaving=true
-	WorldProgress.enter_scene(&"grassland",Vector2(5340,378))
+	WorldProgress.enter_scene(&"grassland",Vector2(5340,378),{"target_spawn_id":&"from_eden","transition_type":"door","entry_direction":Vector2.LEFT})
 
 func _return_instruction() -> String:
 	if CarbonLedger.rescued_people<3:
@@ -551,6 +580,8 @@ func _build_hud() -> void:
 	button.offset_bottom=64
 	button.pressed.connect(_settings.open)
 	_hud.add_child(button)
+	button.hide()
+	for widget in [_shield_text,_shield_meter,_abilities,_rescue,_objective,_boss_panel,_notice]: widget.hide()
 
 func _hud_label(point: Vector2,text: String,font_size: int) -> Label:
 	var label:=Label.new()
@@ -565,14 +596,8 @@ func _hud_label(point: Vector2,text: String,font_size: int) -> Label:
 func _process(delta: float) -> void:
 	hitstop=maxf(0,hitstop-delta)
 	if _hud==null: return
-	if _elevator_seconds>0:
-		_elevator_seconds=maxf(0,_elevator_seconds-delta)
-		if _elevator_seconds==0:
-			WorldProgress.narrative_active=false
-			WorldProgress.narrative_kind=&""
-			advance(5,Vector2(2240,1298))
-			player.reset_at_checkpoint(checkpoint_position)
-			tell("The lift opens onto the processing floor. Find the maintenance entrance.","电梯在人体处理层开启。寻找维护入口。")
+	if elevator.state==OpenElevator.State.IDLE_TOP and elevator.is_rider(player) and not WorldProgress.returning:
+		advance(5,Vector2(2240,1298))
 	for index in _followers.size():
 		var target:=player.position+Vector2(-player.facing*(45+index*27),0)
 		_followers[index].position=_followers[index].position.lerp(target,minf(1,delta*5))
@@ -586,7 +611,7 @@ func _process(delta: float) -> void:
 				dual_gate.set_open(false)
 				dual_receiver.lit=false
 				dual_receiver.hits=0
-	_notice.visible=_notice_left>0
+	_notice.hide()
 	var jump:=EdenBlueprint.text("Double Jump Ready","二段跳就绪") if player.air_jump_available() else EdenBlueprint.text("Air jump used · land to refresh","二段跳已用 · 落地恢复")
 	var skill:=EdenBlueprint.text("Dark Dash %.1fs · Shield %s","黑冲 %.1f 秒 · 护盾 %s")%[player.dash_cooldown,"ON" if player.guard_held else "OFF"]
 	if WorldProgress.eden_chapter.get("escaped",false): skill=EdenBlueprint.text("City skills returned · T at 1F: leave","伊甸能力已交还 · 在一层入口按 T 离开")
@@ -605,13 +630,13 @@ func _process(delta: float) -> void:
 	for id in [&"double_jump",&"mineralization",&"shield",&"black_pierce"]:
 		icons.append(("● " if WorldProgress.has_ability(id) else "○ ")+{&"double_jump":"DJ",&"mineralization":"MIN",&"shield":"SHIELD",&"black_pierce":"DASH"}[id])
 	_abilities.text="  ".join(icons)
-	_rescue.visible=WorldProgress.returning
+	_rescue.hide()
 	_rescue.text=EdenBlueprint.text("Cultivation Pods Rescued: %d / 3","培养舱已救出：%d / 3")%CarbonLedger.rescued_people
 	var objectives=["01 · T: inspect displays. Climb the left stairs.","02 · E: extract Shield. Reflect light into 3 receivers.","03 · Parry twice, then strike the stunned Steward.","04 · T at the right elevator: ascend.","05 · E: extract Dark Dash. Shift / L / F through violet walls.","06 · Cut Oren's conduit with LMB.","07 · Parry the lock; cross both gates within 6 seconds.","08 · E: crystallize → jump → air jump → dash → block.","09 · Enter the life furnace.","10 · Parry ×3 → crystallize → strike the exposed device.","11 · Dash through the charge. Strike after wall impact.","12 · Parry left supply; sever the upper-right lock."]
 	_objective.text=objectives[current_node-1] if not WorldProgress.returning else _return_instruction()
-	_entrance_hint.visible=WorldProgress.returning and CarbonLedger.rescued_people==3
+	_entrance_hint.hide()
 	_entrance_hint.text=EdenBlueprint.text("T · RETURN TO TOXIC MINE","T · 返回毒雾矿坑") if WorldProgress.eden_chapter.get("escaped",false) else EdenBlueprint.text("R · REPAIR / RETURN CITY SKILLS\nThen T · RETURN TO TOXIC MINE","R · 修复并交还伊甸能力\n完成后 T · 返回毒雾矿坑")
-	_boss_panel.visible=(boss.active and not boss.dismantled) or (is_instance_valid(steward) and steward.active)
+	_boss_panel.hide()
 	if boss.active:
 		_boss_bar.max_value=boss.max_health
 		_boss_bar.value=boss.health

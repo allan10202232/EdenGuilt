@@ -1,5 +1,5 @@
 class_name EdenPhaseSource
-extends MineLifeSeam
+extends "res://scripts/mine_challenge/life_seam.gd"
 ## Moss in the root-bound maintenance masonry, using the shared extraction.
 func extraction_notice() -> String:
 	return EdenBlueprint.text("Drawing life from the roots beneath the maintenance floor…","正在抽取维护层根系中的生命力……")

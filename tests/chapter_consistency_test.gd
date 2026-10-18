@@ -18,7 +18,10 @@ func _run() -> void:
 	await ticks(12)
 	var panel: ChapterStatusHUD=app._hud.chapter_status
 	panel_rect=panel.life_orbs.get_global_rect()
-	check(panel.is_visible_in_tree() and panel.position==Vector2(20,18),"chapter one uses the mine-style shared panel")
+	check(panel.is_visible_in_tree() and panel.life_orbs.position==Vector2(24,22),"chapter one uses the shared leaf health display")
+	check(panel.minimap.is_visible_in_tree() and panel.minimap.get_global_rect().position.x>800,"objective and geometry map occupy the top-right corner")
+	check(not panel.carbon_label.is_visible_in_tree() and not panel.cooldown.is_visible_in_tree() and not app._hud.get_node("CarbonDashboard").visible,"gameplay has no carbon readout or cooldown panel")
+	check(level().toxic_water.get_script().get_base_script()==preload("res://scripts/mine_challenge/deadly_acid_pit.gd") and level().toxic_water.visual_only,"chapter one directly reuses the mine acid visuals without a second fall penalty")
 	check(not app._hud.get_node("Top").is_visible_in_tree() and not is_instance_valid(level().parkour_hud),"old chapter-one HUDs are not duplicated")
 	actor()._invulnerability=0
 	actor().hurt()
@@ -34,6 +37,7 @@ func _run() -> void:
 			check(GameSession.state==GameSession.State.PLAYING,"nonfatal fall resumes immediately")
 			await ticks(20)
 	check(GameSession.state==GameSession.State.GAME_OVER and app._result.visible,"fifth injured fall opens Game Over")
+	check(not app._result.get_node("%Summary").text.contains("kg"),"death does not disclose the final carbon record")
 	check(CarbonLedger.gross_kg==gross and GameSession.last_result.death_reason==&"fall","fall accounting persists and fatal result records the cause")
 	GameSession.resume_checkpoint()
 	await ticks(12)
@@ -79,7 +83,7 @@ func _run() -> void:
 	WorldProgress.enter_scene(&"remnant_sea",Vector2(140,596))
 	await ticks(12)
 	panel=level().chapter_status
-	check(panel.is_visible_in_tree() and panel.life_orbs.get_global_rect()==panel_rect,"Eden uses the same mine-style health and carbon panel")
+	check(panel.is_visible_in_tree() and panel.life_orbs.get_global_rect()==panel_rect and not panel.carbon_label.is_visible_in_tree(),"Eden uses the same leaf placement with no real-time carbon display")
 	actor().stats.take_damage(10)
 	actor().position.y=level().player.death_height+20
 	await ticks(3)
@@ -115,6 +119,9 @@ func level() -> Node2D: return app.get_node("LevelRoot").get_child(0)
 func actor() -> CharacterBody2D: return level().player
 func ticks(count: int) -> void:
 	for frame in count: await get_tree().physics_frame
+	# Scene navigation now includes a visible fade and a short re-entry lock.
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0:
+		await get_tree().physics_frame
 	await get_tree().process_frame
 func check(ok: bool,message: String) -> void:
 	checks+=1
@@ -122,6 +129,8 @@ func check(ok: bool,message: String) -> void:
 	print(("PASS " if ok else "FAIL ")+message)
 func capture(id: String) -> void:
 	if not screenshots: return
-	await RenderingServer.frame_post_draw
+	await get_tree().process_frame
+	RenderingServer.force_draw(false)
+	RenderingServer.force_sync()
 	DirAccess.make_dir_recursive_absolute("res://test-output/screenshots")
 	get_viewport().get_texture().get_image().save_png("res://test-output/screenshots/chapter-status-"+id+".png")

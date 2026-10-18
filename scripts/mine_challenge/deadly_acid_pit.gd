@@ -4,17 +4,21 @@ const Art=preload("res://scripts/mine_challenge/mine_art.gd")
 const AcidShader=preload("res://assets/shaders/mine_acid.gdshader")
 const FoamShader=preload("res://assets/shaders/mine_acid_foam.gdshader")
 @export var width := 5600.0
+@export var depth := 400.0
+@export var visual_only := false
 var _clock := 0.0
 var _foam: Array[Sprite2D]=[]
 var _vapor: CPUParticles2D
 
 func _ready() -> void:
 	collision_layer=0
-	collision_mask=2
+	collision_mask=0 if visual_only else 2
+	monitoring=not visual_only
+	monitorable=not visual_only
 	var shape:=CollisionShape2D.new()
 	var box:=RectangleShape2D.new()
-	box.size=Vector2(width,400)
-	shape.position=Vector2(width/2,200)
+	box.size=Vector2(width,depth)
+	shape.position=Vector2(width/2,depth/2)
 	shape.shape=box
 	add_child(shape)
 	body_entered.connect(func(actor: Node2D) -> void: actor_dissolved.emit(actor))
@@ -64,4 +68,4 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	# Water has animated pixel-scale turbulence and an authored broken foam rim.
-	draw_rect(Rect2(0,0,width,400),Color.WHITE)
+	draw_rect(Rect2(0,0,width,depth),Color.WHITE)

@@ -21,9 +21,14 @@ const CAMPAIGN_SCENES: Dictionary = {
 var _truth: Control
 var _audit: Control
 var _dialogue: Control
+var transitions: RoomTransitionController
+var _loaded_region: StringName=&"lone_tree"
 
 
 func _ready() -> void:
+	add_to_group(&"scene_transition_host")
+	transitions=RoomTransitionController.new()
+	add_child(transitions)
 	WorldProgress.campaign_rules = campaign_mode
 	var climate_layer:=CanvasLayer.new()
 	climate_layer.layer=5
@@ -60,6 +65,7 @@ func _ready() -> void:
 
 
 func _on_state_changed(_previous: int, current: int) -> void:
+	if current!=GameSession.State.PLAYING: transitions.cancel()
 	_menu.visible = current == GameSession.State.MAIN_MENU
 	_hud.visible = current != GameSession.State.MAIN_MENU
 	if _level_root.get_child_count()>0 and _level_root.get_child(0).get_meta(&"custom_hud",false):
@@ -70,6 +76,7 @@ func _on_state_changed(_previous: int, current: int) -> void:
 	_audit.hide()
 	match current:
 		GameSession.State.MAIN_MENU:
+			transitions.clear_history()
 			WorldProgress.narrative_active=false
 			WorldProgress.narrative_kind=&""
 			_dialogue.hide()
@@ -92,13 +99,34 @@ func _on_state_changed(_previous: int, current: int) -> void:
 
 
 func _on_scene_requested(_scene_id: StringName) -> void:
-	# Scene exits are Area2D callbacks; replace physics bodies outside that callback.
-	_load_level.call_deferred()
+	var options:=WorldProgress.pending_transition
+	if not options.has("_origin") and _level_root.get_child_count()>0:
+		var previous:=_level_root.get_child(0)
+		options=transitions.resolve_options(options,previous,previous.scene_file_path,_loaded_region)
+	transitions.request(_load_level,options)
+
+func request_room_transition(options: Dictionary) -> bool:
+	if transitions.busy or not WorldProgress.can_play(): return false
+	if _level_root.get_child_count()==0: return false
+	var previous:=_level_root.get_child(0)
+	var resolved:=transitions.resolve_options(options,previous,previous.scene_file_path,_loaded_region)
+	var region: StringName=resolved.get("target_region",&"")
+	if region!=&"" and region!=WorldProgress.current_scene: return WorldProgress.enter_scene(region,Vector2.ZERO,resolved)
+	var path: String=resolved.get("target_scene","")
+	if path.is_empty() or not ResourceLoader.exists(path): return false
+	var packed:=load(path) as PackedScene
+	if packed==null: return false
+	return transitions.request(func() -> Node:
+		_clear_level()
+		var room:=packed.instantiate()
+		_level_root.add_child(room)
+		return room
+	,resolved)
 
 
-func _load_level() -> void:
+func _load_level() -> Node:
 	if GameSession.state != GameSession.State.PLAYING:
-		return
+		return null
 	_clear_level()
 	var packed: PackedScene = region_scenes.get(WorldProgress.current_scene, level_scene)
 	if campaign_mode:
@@ -107,10 +135,20 @@ func _load_level() -> void:
 	WorldProgress.finish_scene_load()
 	var active_level := packed.instantiate()
 	_level_root.add_child(active_level)
+	_loaded_region=WorldProgress.current_scene
+	if campaign_mode:
+		match WorldProgress.current_scene:
+			&"lone_tree": RoomSpawnPoint.install(active_level,&"from_mine",CampaignLevels.definition(&"lone_tree").exit-Vector2(40,24),-1)
+			&"grassland":
+				var legacy:=active_level is CampaignLevel
+				RoomSpawnPoint.install(active_level,&"from_junkyard",Vector2(140,596) if legacy else Vector2(180,1778),1)
+				RoomSpawnPoint.install(active_level,&"from_eden",CampaignLevels.definition(&"grassland").exit-Vector2(90,24) if legacy else Vector2(5340,378),-1)
+			&"remnant_sea": RoomSpawnPoint.install(active_level,&"from_mine",EdenBlueprint.ENTRY if active_level is EdenChapterLevel else Vector2(140,596),-1)
 	_hud.visible = not active_level.get_meta(&"custom_hud",false)
 	var focus := get_viewport().gui_get_focus_owner()
 	if focus != null:
 		focus.release_focus()
+	return active_level
 
 
 func _clear_level() -> void:

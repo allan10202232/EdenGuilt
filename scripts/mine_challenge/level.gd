@@ -157,7 +157,7 @@ func _build_layout() -> void:
 	)
 	area(Rect2(60,1660,50,150),"HomewardExit").body_entered.connect(func(actor: Node2D) -> void:
 		if actor==player and _returning and WorldProgress.ability_state(&"mineralization")==WorldProgress.AbilityState.RETURNED:
-			WorldProgress.enter_scene(&"lone_tree",CampaignLevels.definition(&"lone_tree").exit-Vector2(40,24))
+			WorldProgress.enter_scene(&"lone_tree",CampaignLevels.definition(&"lone_tree").exit-Vector2(40,24),{"target_spawn_id":&"from_mine","entry_direction":Vector2.LEFT})
 	)
 
 func deck(rect: Rect2) -> StaticBody2D:
@@ -372,6 +372,7 @@ func _build_hud() -> void:
 	settings_button.offset_top=20
 	settings_button.offset_bottom=64
 	_hud.add_child(settings_button)
+	settings_button.hide()
 	_settings=SettingsScript.new()
 	_hud.add_child(_settings)
 	settings_button.pressed.connect(_settings.open)
@@ -406,7 +407,7 @@ func _process(delta: float) -> void:
 	if WorldProgress.can_play():
 		_clock+=delta
 		_tutorial_seconds=maxf(0,_tutorial_seconds-delta)
-	if is_instance_valid(_tutorial): _tutorial.visible=_tutorial_seconds>0 and WorldProgress.can_play()
+	if is_instance_valid(_tutorial): _tutorial.hide()
 	if is_instance_valid(player) and is_instance_valid(_jump_label):
 		_jump_label.text=GameText.t("二段跳就绪") if player.jumps_used<2 else GameText.t("二段跳已用 · 落台恢复")
 		_cooldown.value=0.6-player.cooldown
@@ -444,8 +445,7 @@ func finish() -> void:
 	box.add_theme_constant_override(&"separation",16)
 	_summary.add_child(box)
 	label(box,GameText.t("矿坑挑战完成"),28)
-	label(box,GameText.t("矿化气柱：%d\n永久固定：%.0f kg CO₂e")%[vents_mineralized,sequestered],22)
-	var note:=label(box,GameText.t("临时承重的晶壳会碎裂，碳仍结合在固态矿石中。\n以上数值为游戏教学模型。"),16)
+	var note:=label(box,"The path to Eden City is open." if GameText.language!="zh_CN" else "通往伊甸城的道路已打开。",18)
 	note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	var proceed:=Button.new()
 	proceed.text=GameText.t("前往 Eden City")
@@ -457,7 +457,7 @@ func continue_to_eden() -> void:
 	if not _cleared: return
 	WorldProgress.narrative_active=false
 	WorldProgress.narrative_kind=&""
-	if _campaign: WorldProgress.enter_scene(&"remnant_sea",Vector2(140,596))
+	if _campaign: WorldProgress.enter_scene(&"remnant_sea",EdenBlueprint.ENTRY,{"target_spawn_id":&"from_mine","transition_type":"door","entry_direction":Vector2.RIGHT})
 	else:
 		WorldProgress.current_scene=&"remnant_sea"
 		WorldProgress.spawn_position=Vector2(140,596)

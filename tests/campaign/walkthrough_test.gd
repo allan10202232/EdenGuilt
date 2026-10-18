@@ -158,6 +158,7 @@ func _tick(count: int) -> void:
 		if GameSession.state==GameSession.State.GAME_OVER and failures==0:
 			_deaths+=1
 			_check(false,"player died during the ordinary-input route at %s %s"%[WorldProgress.current_scene,_player().position])
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0: await get_tree().physics_frame
 	await get_tree().process_frame
 
 func _attack_nearby() -> void:

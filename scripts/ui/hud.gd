@@ -91,6 +91,9 @@ func _ready() -> void:
 		_settings_button.offset_right=-20
 		_settings_button.offset_top=20
 		_settings_button.offset_bottom=64
+		_settings_button.hide()
+		$Hint.hide()
+		%Notice.hide()
 	GameText.language_changed.connect(func() -> void:
 		_update_progress()
 		_update_health(GameSession.health,GameSession.max_health)
@@ -118,10 +121,10 @@ func _show_notice(text: String) -> void:
 func _process(delta: float) -> void:
 	if chapter_status!=null:
 		_update_chapter_status()
-	if WorldProgress.can_play():
+	if WorldProgress.can_play() and not _campaign_ui:
 		_tutorial_seconds = maxf(0.0,_tutorial_seconds-delta)
 		if _tutorial_seconds <= 0.0: _offer_tutorial()
-	_tutorial.visible = _tutorial_seconds > 0.0 and WorldProgress.can_play()
+	_tutorial.visible = not _campaign_ui and _tutorial_seconds > 0.0 and WorldProgress.can_play()
 	_notice_seconds = maxf(0.0, _notice_seconds-delta)
 	%Notice.modulate.a = minf(1.0, _notice_seconds)
 
@@ -150,7 +153,7 @@ func _update_chapter_status() -> void:
 func _update_progress() -> void:
 	# The first chapter uses this space for its six-section parkour status panel.
 	var parkour := WorldProgress.campaign_rules and WorldProgress.current_scene == &"lone_tree"
-	$CarbonDashboard.visible = not _campaign_ui
+	$CarbonDashboard.hide()
 	$Abilities.hide()
 	$RouteMap.hide()
 	%Notice.anchor_top = 1.0 if parkour else 0.0
@@ -181,7 +184,7 @@ func _update_progress() -> void:
 	]
 	if WorldProgress.campaign_rules:
 		$Hint.text=_campaign_objective()
-		$Hint.visible = not parkour
+		$Hint.hide()
 
 
 func _campaign_objective() -> String:

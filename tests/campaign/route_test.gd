@@ -119,6 +119,7 @@ func _tick(count: int) -> void:
 			for enemy in _level().enemies:
 				if is_instance_valid(enemy): enemy.set_physics_process(false)
 		await get_tree().physics_frame
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0: await get_tree().physics_frame
 	await get_tree().process_frame
 
 func _action(action: StringName) -> void:

@@ -133,6 +133,9 @@ func _spawn(level: CampaignLevel, player: CharacterBody2D, boss: bool, species: 
 
 func _ticks(count: int) -> void:
 	for index in count: await get_tree().physics_frame
+	# Scene navigation now includes a visible fade and a short re-entry lock.
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0:
+		await get_tree().physics_frame
 	await get_tree().process_frame
 
 

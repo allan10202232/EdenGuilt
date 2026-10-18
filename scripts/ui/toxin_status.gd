@@ -1,7 +1,7 @@
 extends Control
 
 func _process(_delta: float) -> void:
-	visible=WorldProgress.current_scene==&"grassland" and CarbonLedger.enabled
+	visible=false
 	queue_redraw()
 
 func _draw() -> void:

@@ -338,11 +338,13 @@ func _action(action: StringName,held: bool=false) -> void:
 
 func _physics(count: int) -> void:
 	for index in count: await get_tree().physics_frame
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0: await get_tree().physics_frame
 	await get_tree().process_frame
 
 
 func _frames(count: int) -> void:
 	for index in count: await get_tree().process_frame
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0: await get_tree().process_frame
 
 
 func _click(button: Button) -> void:

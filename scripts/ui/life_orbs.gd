@@ -1,6 +1,6 @@
 class_name LifeOrbs
 extends Range
-## Five pixel-art vessels; health is consumed from the right, half a vessel per hit.
+## Five leaves; each half leaf retains the existing ten-HP contract.
 
 const ORB_COUNT: int = PlaceholderStats.LIFE_ORB_COUNT
 const HALVES: int = PlaceholderStats.LIFE_HALVES
@@ -79,27 +79,21 @@ func _draw() -> void:
 
 
 func _draw_orb(origin: Vector2, halves: int, flashing: bool) -> void:
+	var silhouette:=PackedVector2Array([Vector2(2,12),Vector2(2,8),Vector2(4,8),Vector2(4,5),Vector2(7,5),Vector2(7,3),Vector2(11,3),Vector2(11,2),Vector2(15,1),Vector2(14,6),Vector2(14,10),Vector2(12,10),Vector2(12,12),Vector2(9,12),Vector2(9,14),Vector2(5,14)])
 	for y in 16:
 		for x in 16:
-			var distance := Vector2(x - 7.5, y - 7.5).length_squared()
-			if distance > 60.0:
-				continue
-			var tint := Color("0b1b15")
-			if distance < 47.0:
-				tint = Color("4a825b") if x + y < 16 else Color("254c38")
-			if distance < 34.0:
-				var filled := halves == 2 or (halves == 1 and y >= 8)
-				if filled:
-					tint = Color("83e88a") if y < 6 else Color("42bc68") if y < 11 else Color("267f4b")
-					if x > 10:
-						tint = tint.darkened(0.18)
-					if halves == 1 and y == 8:
-						tint = Color("a4f3a3")
-				else:
-					tint = Color("152b24") if y < 8 else Color("102219")
-			# Glass glints keep an empty orb visible without implying remaining life.
-			if (y == 3 and x in [5, 6, 7]) or (x == 4 and y in [4, 5]):
-				tint = Color("dcffcf") if halves == 2 else Color("567c66")
-			if flashing and distance >= 34.0 and distance < 47.0:
-				tint = tint.lerp(Color("edffd8"), _flash / FLASH_DURATION)
+			var pixel:=Vector2(x+.5,y+.5)
+			if not Geometry2D.is_point_in_polygon(pixel,silhouette): continue
+			var edge:=false
+			for direction in [Vector2.LEFT,Vector2.RIGHT,Vector2.UP,Vector2.DOWN]:
+				if not Geometry2D.is_point_in_polygon(pixel+direction,silhouette): edge=true
+			var filled:=halves==2 or (halves==1 and x+y>=16)
+			var tint:=Color("10271a")
+			if not edge:
+				tint=(Color("a4e797") if x+y<16 else Color("4daf62")) if filled else Color("263a29")
+				if absi(x+y-16)<=1: tint=Color("d0e4a2") if filled else Color("52634a")
+				elif posmod(x-y,6)==0: tint=tint.darkened(.16)
+			elif filled: tint=Color("426547")
+			if flashing: tint=tint.lerp(Color("fff4cb"),_flash/FLASH_DURATION*.8)
 			draw_rect(Rect2(origin + Vector2(x, y) * PIXEL, Vector2.ONE * PIXEL), tint)
+	draw_line(origin+Vector2(3,13)*PIXEL,origin+Vector2(1,15)*PIXEL,Color("b1b778") if halves>0 else Color("46513b"),2)

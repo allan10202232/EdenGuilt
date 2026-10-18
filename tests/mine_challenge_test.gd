@@ -106,7 +106,7 @@ func _run() -> void:
 	await ticks(6)
 	check(WorldProgress.current_scene==&"lone_tree" and app._hud.visible,"return exit reconnects Junkyard with the normal HUD")
 	var returned: Node2D=app.get_node("LevelRoot").get_child(0)
-	check(returned is ScrapyardParkourLevel and returned.player.position.x>9320 and returned.player.position.y<350,"mine return spawns on the new scrapyard exit island")
+	check(returned is ScrapyardParkourLevel and WorldProgress.spawn_position==Vector2(9360,296) and returned.player.position.x>9200 and returned.player.position.y<380,"mine return uses the named exit-island spawn and held movement continues along the rescue walkway")
 	check(returned._rescue_path and returned.player.is_on_floor(),"returning player stands on the continuous rescue walkway")
 	var returned_deaths:=WorldProgress.scrapyard_deaths
 	await ticks(30)
@@ -180,6 +180,9 @@ func direction(axis: float) -> void:
 	elif axis<0: Input.action_press(&"eden_move_left")
 func ticks(count: int) -> void:
 	for index in count: await get_tree().physics_frame
+	# Scene navigation now includes a visible fade and a short re-entry lock.
+	while WorldProgress.scene_transition_active or WorldProgress.transition_rearm_seconds>0:
+		await get_tree().physics_frame
 	await get_tree().process_frame
 func key(code: Key) -> void:
 	var event:=InputEventKey.new()

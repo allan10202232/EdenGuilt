@@ -250,7 +250,7 @@ func _on_exit(body: Node2D) -> void:
 		return
 	var index:=AbilityCatalog.REGIONS.find(region_id)
 	if index<2:
-		WorldProgress.enter_scene(AbilityCatalog.REGIONS[index+1],Vector2(140,596))
+		WorldProgress.enter_scene(AbilityCatalog.REGIONS[index+1],Vector2(140,596),{"target_spawn_id":&"from_junkyard" if index==0 else &"from_mine","entry_direction":Vector2.RIGHT})
 	elif not WorldProgress.is_enemy_defeated(_entity_id("boss")):
 		WorldProgress.set_notice(GameText.t("伊甸守卫仍在保护能源档案，先击败它再揭开真相。"))
 	elif WorldProgress.ability_state(&"black_pierce")==WorldProgress.AbilityState.UNAVAILABLE:
@@ -266,7 +266,7 @@ func _on_entrance(body: Node2D) -> void:
 	if index>0:
 		var previous: StringName = AbilityCatalog.REGIONS[index-1]
 		var previous_exit: Vector2 = CampaignLevels.definition(previous).exit
-		WorldProgress.enter_scene(previous,previous_exit-Vector2(40 if previous==&"lone_tree" else 90,24))
+		WorldProgress.enter_scene(previous,previous_exit-Vector2(40 if previous==&"lone_tree" else 90,24),{"target_spawn_id":&"from_mine" if previous==&"lone_tree" else &"from_eden","entry_direction":Vector2.LEFT})
 	elif WorldProgress.returning and WorldProgress.required_returns_complete():
 		GameSession.complete_level()
 	else:
