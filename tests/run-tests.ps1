@@ -33,6 +33,20 @@ function Invoke-GodotCheck {
 }
 
 try {
+    # Catch a lost autoload before Godot emits cascading parser errors (which can
+    # still return exit code 0 during editor import).
+    $projectConfig = Get-Content -Raw -LiteralPath (Join-Path $projectDirectory 'project.godot')
+    foreach ($singleton in @('GameSession', 'WorldProgress', 'CarbonLedger', 'SoundManager')) {
+        $registration = '(?m)^' + [regex]::Escape($singleton) + '="\*res://([^"\r\n]+)"\s*$'
+        $configMatch = [regex]::Match($projectConfig, $registration)
+        if (-not $configMatch.Success) {
+            throw "Missing autoload $singleton in project.godot. Reopen the project after restoring its [autoload] registration."
+        }
+        $scriptPath = Join-Path $projectDirectory $configMatch.Groups[1].Value
+        if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) {
+            throw "Autoload $singleton points to a missing script: $scriptPath"
+        }
+    }
     # Redirect only this test process's writable Godot data into the workspace.
     $env:APPDATA = Join-Path $outputDirectory 'appdata'
     $env:LOCALAPPDATA = Join-Path $outputDirectory 'localappdata'
@@ -41,6 +55,13 @@ try {
     Invoke-GodotCheck -EngineArguments @(
         '--headless', '--path', $projectDirectory, '--editor', '--import', '--quit', '--log-file', $importLog
     ) -LogPath $importLog
+
+    $startupLog = Join-Path $outputDirectory 'startup.log'
+    Invoke-GodotCheck -EngineArguments @(
+        '--headless', '--path', $projectDirectory, '--audio-driver', 'Dummy',
+        '--log-file', $startupLog, 'res://tests/startup_test.tscn'
+    ) -LogPath $startupLog -Summary 'STARTUP'
+    Write-Host "Startup configuration passed. Log: $startupLog"
 
     $testLog = Join-Path $outputDirectory $(if ($Screenshots) { 'phase-one-visual.log' } else { 'phase-one-headless.log' })
     $engineArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $testLog)
@@ -67,6 +88,12 @@ try {
     if ($Screenshots) { $meleeArguments += @('--', '--screenshots') }
     Invoke-GodotCheck -EngineArguments $meleeArguments -LogPath $meleeLog -Summary 'MELEE'
     Write-Host "Melee templates passed. Log: $meleeLog"
+    $carbonLog = Join-Path $outputDirectory 'carbon-headless.log'
+    Invoke-GodotCheck -EngineArguments @(
+        '--headless', '--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $carbonLog,
+        'res://tests/carbon/carbon_test.tscn'
+    ) -LogPath $carbonLog -Summary 'CARBON'
+    Write-Host "Carbon ledger and audit passed. Log: $carbonLog"
     $campaignLog = Join-Path $outputDirectory $(if ($Screenshots) { 'campaign-visual.log' } else { 'campaign-headless.log' })
     $campaignArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $campaignLog)
     if ($Screenshots) {
@@ -78,6 +105,30 @@ try {
     if ($Screenshots) { $campaignArguments += @('--', '--screenshots') }
     Invoke-GodotCheck -EngineArguments $campaignArguments -LogPath $campaignLog -Summary 'CAMPAIGN'
     Write-Host "Three-level campaign passed. Log: $campaignLog"
+
+    $actionLog = Join-Path $outputDirectory $(if ($Screenshots) { 'actions-visual.log' } else { 'actions-headless.log' })
+    $actionArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $actionLog)
+    if ($Screenshots) { $actionArguments += @('--rendering-method', 'gl_compatibility') }
+    else { $actionArguments += '--headless' }
+    $actionArguments += 'res://tests/campaign/action_test.tscn'
+    if ($Screenshots) { $actionArguments += @('--', '--screenshots') }
+    Invoke-GodotCheck -EngineArguments $actionArguments -LogPath $actionLog -Summary 'ACTIONS'
+    Write-Host "Character actions passed. Log: $actionLog"
+
+    $routeLog = Join-Path $outputDirectory 'route.log'
+    Invoke-GodotCheck -EngineArguments @(
+        '--headless', '--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60',
+        '--log-file', $routeLog, 'res://tests/campaign/route_test.tscn'
+    ) -LogPath $routeLog -Summary 'ROUTE'
+    Write-Host "Physical round trip passed. Log: $routeLog"
+
+    $walkthroughLog = Join-Path $outputDirectory $(if ($Screenshots) { 'walkthrough-visual.log' } else { 'walkthrough-headless.log' })
+    $walkthroughArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--fixed-fps', '60', '--log-file', $walkthroughLog)
+    if ($Screenshots) { $walkthroughArguments += @('--rendering-method', 'gl_compatibility') }
+    else { $walkthroughArguments += '--headless' }
+    $walkthroughArguments += 'res://tests/campaign/walkthrough_test.tscn'
+    Invoke-GodotCheck -EngineArguments $walkthroughArguments -LogPath $walkthroughLog -Summary 'WALKTHROUGH'
+    Write-Host "Normal-input A/B walkthrough passed. Log: $walkthroughLog"
 } catch {
     Write-Error -Message $_ -ErrorAction Continue
     $testExitCode = 1

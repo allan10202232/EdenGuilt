@@ -8,6 +8,7 @@ var dummies: Array[MeleeDummy] = []
 func _ready() -> void:
 	EdenInputBindings.configure()
 	GameSession.return_to_menu()
+	WorldProgress.campaign_rules = false
 	GameSession.start_run()
 	WorldProgress.borrow_ability(&"light_blade")
 	player.get_node("Camera2D").enabled = false

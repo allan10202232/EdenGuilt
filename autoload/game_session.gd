@@ -19,7 +19,7 @@ var _death_reason: StringName = &"damage"
 
 
 func _process(delta: float) -> void:
-	if state == State.PLAYING:
+	if state == State.PLAYING and not WorldProgress.narrative_active:
 		elapsed_seconds += delta
 
 
@@ -33,6 +33,7 @@ func start_run() -> void:
 	last_result = {}
 	_death_reason = &"damage"
 	WorldProgress.reset_run()
+	CarbonLedger.begin_run(WorldProgress.campaign_rules)
 	health_changed.emit(health, max_health)
 	score_changed.emit(score)
 	_set_state(State.PLAYING)
@@ -49,7 +50,7 @@ func return_to_menu() -> void:
 
 
 func sync_health(current: int, maximum: int) -> void:
-	if state != State.PLAYING or WorldProgress.transitioning:
+	if state != State.PLAYING or WorldProgress.transitioning or WorldProgress.narrative_active:
 		return
 	max_health = maxi(1, maximum)
 	health = clampi(current, 0, max_health)
@@ -59,14 +60,14 @@ func sync_health(current: int, maximum: int) -> void:
 
 
 func sync_score(value: int) -> void:
-	if state != State.PLAYING or WorldProgress.transitioning:
+	if state != State.PLAYING or WorldProgress.transitioning or WorldProgress.narrative_active:
 		return
 	score = maxi(0, value)
 	score_changed.emit(score)
 
 
 func player_died(reason: StringName = &"damage") -> void:
-	if state == State.PLAYING and not WorldProgress.transitioning:
+	if WorldProgress.can_play():
 		_death_reason = reason
 		sync_health(0, max_health)
 
@@ -93,7 +94,7 @@ func complete_level() -> void:
 
 func finish_run(won: bool) -> void:
 	# Only the first terminal event wins; late collisions cannot replace the result.
-	if state != State.PLAYING or WorldProgress.transitioning:
+	if state != State.PLAYING or WorldProgress.transitioning or WorldProgress.narrative_active:
 		return
 	WorldProgress.set_shield_active(false)
 	last_result = {
@@ -101,6 +102,9 @@ func finish_run(won: bool) -> void:
 		"score": score, "elapsed_seconds": elapsed_seconds,
 		"death_reason": _death_reason, "checkpoint": WorldProgress.checkpoint_name(),
 	}
+	if CarbonLedger.enabled:
+		last_result["audit"] = CarbonLedger.snapshot()
+		last_result["ending"] = String(WorldProgress.ending_choice)
 	_set_state(State.VICTORY if won else State.GAME_OVER)
 	run_finished.emit(last_result.duplicate())
 

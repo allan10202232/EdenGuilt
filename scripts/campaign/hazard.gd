@@ -6,10 +6,11 @@ var region_ability: StringName = &"dash"
 var area := Rect2()
 var offset: float = 0.0
 var _clock: float = 0.0
+var neutralized: bool = false
 
 
 func phase() -> int:
-	if WorldProgress.route_open(region_ability):
+	if neutralized or WorldProgress.route_open(region_ability):
 		return 0
 	var cycle:=fmod(_clock+offset,3.6)
 	return 2 if cycle>=2.2 and cycle<2.85 else 1 if cycle>=1.4 and cycle<2.2 else 0
@@ -28,7 +29,7 @@ func _physics_process(delta: float) -> void:
 
 func _draw() -> void:
 	var active:=phase()
-	var safe:=WorldProgress.route_open(region_ability)
+	var safe:=neutralized or WorldProgress.route_open(region_ability)
 	var tint:=Color(0.28,0.76,0.87) if safe else Color(0.96,0.3,0.22) if active==2 else Color(0.96,0.67,0.27)
 	draw_rect(Rect2(area.position-Vector2(12,12),Vector2(area.size.x+24,16)),Color(0.18,0.22,0.25))
 	draw_rect(Rect2(area.position,Vector2(area.size.x,4)),tint)

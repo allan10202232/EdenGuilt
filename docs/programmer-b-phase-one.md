@@ -4,13 +4,15 @@
 
 Godot 4.7.2，入口 `scenes/main.tscn`。已根据 [能力规则原文](design-rules.md)实现：
 主菜单、能力 HUD、世界进度、死亡/胜利结算、检查点继续、整局重开和音频事件。
-现默认启动森林、垃圾场、矿厂三个独立布局的可玩关卡，接入原画角色、生成背景/敌人、近战、巡逻/射击/Boss 与往返路线；
-详见 [三关试玩版说明](three-level-campaign.md)。原几何房保留为接口回归测试，逐帧动画、正式音频与最终平衡仍待后续完善。
+现默认启动垃圾场、毒雾矿场、伊甸园三个独立布局的可玩关卡，接入实时碳账本、能效、双结局、审计报告与返程共同修复；
+详见 [三关试玩版说明](three-level-campaign.md)。原几何房保留为接口回归测试；主战役已接入双形态各 24 帧动作，见 [动作与流程回归](character-actions.md)。正式音频与最终平衡仍待后续完善。
 
 | 文件 | 职责 |
 | --- | --- |
 | `autoload/game_session.gd` | 流程状态、生命/得分快照、结算记录、检查点继续与重开 |
 | `autoload/world_progress.gd` | 四能力、土地/通路、场景入口检查点、单次怪物/拾取进度 |
+| `autoload/carbon_ledger.gd`、`assets/carbon_rules.tres` | 排放事件、能效/热、气候阈值、固碳/循环经济和可调参数 |
+| `scripts/integration/sustainability_audit.gd` | 冻结本局快照，导出 HTML / JSON / CSV 审计 |
 | `scripts/integration/ability_catalog.gd` | 能力/地区 ID、文案、对应地点和音效 ID |
 | `scripts/integration/gameplay_bridge.gd` | A 的数据源 → GameSession → HUD；加载时恢复数据 |
 | `scripts/main.gd` | 场景映射和安全替换、UI 状态、输入映射 |

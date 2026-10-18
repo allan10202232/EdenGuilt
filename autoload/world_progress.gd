@@ -12,6 +12,7 @@ signal checkpoint_changed
 signal scene_requested(scene_id: StringName)
 signal enemy_defeated(id: StringName)
 signal notice_changed(text: String)
+signal truth_requested
 
 enum AbilityState { UNAVAILABLE, BORROWED, RETURNED }
 
@@ -20,6 +21,12 @@ var spawn_position := Vector2(100, 560)
 var returning: bool = false
 var shield_active: bool = false
 var transitioning: bool = false
+var campaign_rules: bool = true
+var narrative_active: bool = false
+var truth_revealed: bool = false
+var core_reversed: bool = false
+var ending_choice: StringName = &""
+var repaired_regions: Dictionary = {}
 var notice: String = "靠近能力源按 E 吸收，返程在原处按 R 交还。"
 var _abilities: Dictionary = {}
 var _lands: Dictionary = {}
@@ -40,6 +47,11 @@ func reset_run() -> void:
 	returning = false
 	shield_active = false
 	transitioning = false
+	narrative_active = false
+	truth_revealed = false
+	core_reversed = false
+	ending_choice = &""
+	repaired_regions.clear()
 	_abilities.clear()
 	_lands.clear()
 	_routes.clear()
@@ -85,6 +97,9 @@ func borrow_ability(id: StringName) -> bool:
 
 func return_ability(id: StringName) -> bool:
 	if not can_play() or not has_ability(id):
+		return false
+	if campaign_rules and (not core_reversed or not repaired_regions.has(current_scene)):
+		set_notice("选择逆向循环路线后，和获救居民一起修复这片土地。")
 		return false
 	var definition := AbilityCatalog.definition(id)
 	var region: StringName = definition.region
@@ -182,15 +197,19 @@ func set_checkpoint(id: StringName, position: Vector2, label: String) -> bool:
 
 
 func begin_return_journey() -> void:
+	if campaign_rules:
+		reveal_truth()
+		return
 	if not can_play() or returning:
 		return
 	returning = true
-	set_notice("伙伴已获救。返回矿厂、垃圾场、森林交还能力，带他们回家。")
+	set_notice("伙伴已获救。向左返程交还能力，带他们回家。")
 	world_changed.emit()
 
 
 func required_returns_complete() -> bool:
-	for id: StringName in [&"double_jump", &"dash", &"shield"]:
+	var required: Array = [&"double_jump", &"mineralization", &"shield", &"black_pierce"] if campaign_rules else [&"double_jump", &"dash", &"shield"]
+	for id: StringName in required:
 		if ability_state(id) != AbilityState.RETURNED:
 			return false
 	return true
@@ -220,7 +239,46 @@ func is_collected(id: StringName) -> bool:
 
 
 func can_play() -> bool:
-	return GameSession.state == GameSession.State.PLAYING and not transitioning
+	return GameSession.state == GameSession.State.PLAYING and not transitioning and not narrative_active
+
+
+func reveal_truth() -> bool:
+	if not can_play() or truth_revealed or current_scene!=&"remnant_sea":
+		return false
+	truth_revealed = true
+	narrative_active = true
+	set_shield_active(false)
+	truth_requested.emit()
+	return true
+
+
+func choose_ending(choice: StringName) -> bool:
+	if not narrative_active or not truth_revealed or GameSession.state!=GameSession.State.PLAYING or choice not in [&"A", &"B"]:
+		return false
+	ending_choice = choice
+	narrative_active = false
+	if choice==&"A":
+		core_reversed = true
+		returning = true
+		CarbonLedger.rescued_people = 3
+		set_notice("逆向循环核心已启动。档案门口按 R 与 3 位居民共建通路；向左回原能力源卸下技能。")
+		world_changed.emit()
+		CarbonLedger.changed.emit()
+	else:
+		set_notice("你留在了伊甸园。污染仍被转移到城外。")
+		world_changed.emit()
+		GameSession.complete_level()
+	return true
+
+
+func repair_current_region() -> bool:
+	if not can_play() or not core_reversed or CarbonLedger.rescued_people<3 or repaired_regions.has(current_scene):
+		return false
+	repaired_regions[current_scene] = true
+	CarbonLedger.restore_region(current_scene)
+	_lands[current_scene] = &"restored"
+	world_changed.emit()
+	return true
 
 
 func set_notice(text: String) -> void:

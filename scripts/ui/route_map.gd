@@ -25,4 +25,4 @@ func _draw() -> void:
 	draw_circle(origin+Vector2(data.source)*scale,3,Color(0.46,0.95,0.67))
 	draw_rect(Rect2(origin+Vector2(data.exit)*scale-Vector2(2,3),Vector2(4,6)),Color(0.9,0.83,0.6))
 	draw_circle(origin+player.position*scale,3,Color(1,0.34,0.35))
-	draw_string(get_theme_default_font(),Vector2(12,13),"← 返程 · 交还能力" if WorldProgress.returning else "探索 · 森林 → 垃圾场 → 矿厂",HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color(0.78,0.83,0.77))
+	draw_string(get_theme_default_font(),Vector2(12,13),"← 逆向循环 · 共同修复" if WorldProgress.returning else "垃圾场 → 毒雾矿场 → 伊甸园",HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color(0.78,0.83,0.77))

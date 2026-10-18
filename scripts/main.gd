@@ -2,9 +2,9 @@ extends Node
 
 @export var campaign_mode: bool = true
 const CAMPAIGN_SCENES: Dictionary = {
-	&"lone_tree": preload("res://scenes/campaign/forest.tscn"),
-	&"grassland": preload("res://scenes/campaign/junkyard.tscn"),
-	&"remnant_sea": preload("res://scenes/campaign/mine.tscn"),
+	&"lone_tree": preload("res://scenes/campaign/junkyard_start.tscn"),
+	&"grassland": preload("res://scenes/campaign/toxic_mine.tscn"),
+	&"remnant_sea": preload("res://scenes/campaign/eden_garden.tscn"),
 }
 @export var level_scene: PackedScene = preload("res://scenes/placeholder_level.tscn")
 @export var region_scenes: Dictionary[StringName, PackedScene] = {
@@ -16,9 +16,33 @@ const CAMPAIGN_SCENES: Dictionary = {
 @onready var _menu: Control = $UI/Root/MainMenu
 @onready var _hud: Control = $UI/Root/HUD
 @onready var _result: Control = $UI/Root/ResultDialog
+var _truth: Control
+var _audit: Control
 
 
 func _ready() -> void:
+	WorldProgress.campaign_rules = campaign_mode
+	var climate_layer:=CanvasLayer.new()
+	climate_layer.layer=5
+	add_child(climate_layer)
+	var climate:=preload("res://scripts/ui/climate_overlay.gd").new()
+	climate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	climate.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	climate_layer.add_child(climate)
+	_truth=preload("res://scripts/ui/truth_dialog.gd").new()
+	_truth.name="TruthDialog"
+	$UI/Root.add_child(_truth)
+	_audit=preload("res://scripts/ui/sustainability_report.gd").new()
+	_audit.name="SustainabilityReport"
+	$UI/Root.add_child(_audit)
+	WorldProgress.truth_requested.connect(func() -> void:
+		_hud.set_interactive(false)
+		_truth.present()
+	)
+	WorldProgress.world_changed.connect(func() -> void:
+		if not WorldProgress.narrative_active:
+			_hud.set_interactive(GameSession.state==GameSession.State.PLAYING)
+	)
 	EdenInputBindings.configure()
 	GameSession.state_changed.connect(_on_state_changed)
 	WorldProgress.scene_requested.connect(_on_scene_requested)
@@ -30,6 +54,8 @@ func _on_state_changed(_previous: int, current: int) -> void:
 	_hud.visible = current != GameSession.State.MAIN_MENU
 	_hud.set_interactive(current == GameSession.State.PLAYING)
 	_result.hide()
+	_truth.hide()
+	_audit.hide()
 	match current:
 		GameSession.State.MAIN_MENU:
 			_clear_level()
@@ -44,7 +70,10 @@ func _on_state_changed(_previous: int, current: int) -> void:
 				level.set_deferred(&"process_mode", Node.PROCESS_MODE_DISABLED)
 			SoundManager.stop_sfx()
 			SoundManager.play_sfx(&"victory" if current == GameSession.State.VICTORY else &"game_over")
-			_result.present(GameSession.last_result)
+			if current==GameSession.State.VICTORY and campaign_mode:
+				_audit.present(GameSession.last_result)
+			else:
+				_result.present(GameSession.last_result)
 
 
 func _on_scene_requested(_scene_id: StringName) -> void:

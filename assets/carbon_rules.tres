@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="CarbonRules" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/integration/carbon_rules.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+double_jump_kg = 5.0
+mineralization_kg = 1.0
+shield_kg = 20.0
+black_pierce_kg = 200.0
+attack_kg = 0.25
+rapid_attack_extra_kg = 1.75
+cadence_seconds = 0.75
+cadence_tolerance = 0.2
+rapid_interval = 0.5
+haze_threshold_kg = 80.0
+frenzy_threshold_kg = 220.0
+severe_threshold_kg = 400.0
+mineral_node_storage_kg = 15.0
+community_storage_kg = 45.0
+recycled_material_per_node_kg = 10.0
+teaching_ore_ratio = 4.0

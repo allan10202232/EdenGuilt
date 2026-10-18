@@ -1,7 +1,7 @@
 # 能力、世界状态与检查点
 
-> 根工程默认进入森林、垃圾场、矿厂三关，试玩流程见 [三关说明](three-level-campaign.md)。
-> 下文保留稳定地区 ID 与原设计语义；显示名映射为森林/垃圾场/矿厂，旧几何验收房保留。
+> 根工程默认进入垃圾场、毒雾矿场、伊甸园，试玩流程见 [三关说明](three-level-campaign.md)和[碳系统](carbon-system.md)。
+> 下文保留旧设计语义和稳定地区 ID；`dash` 仅供旧几何房回归，新战役采用 `mineralization` 与 `black_pierce`。
 
 ## 依据与职责
 

@@ -23,12 +23,22 @@ var _source_label: Label
 var _gate: StaticBody2D
 var _route_ready: bool = false
 var _source_sprite: Sprite2D
+var _secondary_label: Label
+var _dark_bodies: Array[StaticBody2D] = []
+var _mineral_platforms: Array[Rect2] = []
+var _temporary_platforms: Array[Dictionary] = []
+var _exit_area: Area2D
 
 
 func _ready() -> void:
 	definition = CampaignLevels.definition(region_id)
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var ecology:=ShaderMaterial.new()
+	ecology.shader=preload("res://assets/ecology.gdshader")
+	material=ecology
 	_background = CampaignLevels.texture("backgrounds/"+definition.background)
+	if _background==null:
+		_background=CampaignLevels.texture("backgrounds/forest")
 	_terrain = CampaignLevels.texture("terrain/biome_atlas")
 	_companion_texture = CampaignLevels.trimmed_texture("characters/hero_green")
 	player.position = WorldProgress.spawn_position
@@ -55,6 +65,13 @@ func _ready() -> void:
 		hazard.offset = index*0.7
 		add_child(hazard)
 		hazards.append(hazard)
+	for rect: Rect2 in definition.dark_walls:
+		var wall:=_add_platform(rect)
+		wall.collision_layer=16
+		_dark_bodies.append(wall)
+	for index in definition.mineral_nodes.size():
+		if WorldProgress.is_collected(_entity_id("mineral_%d"%index)):
+			_install_mineral(index)
 	for index in definition.enemies.size():
 		_spawn_enemy(definition.enemies[index],definition.patrols[index],"mob_%d"%index)
 	if definition.has("boss"):
@@ -67,7 +84,8 @@ func _ready() -> void:
 		area.body_entered.connect(_on_checkpoint.bind(point,index))
 		_checkpoints.append(point)
 	var exit_point: Vector2 = definition.exit
-	_area(Rect2(exit_point-Vector2(25,45),Vector2(50,100)),"Exit").body_entered.connect(_on_exit)
+	_exit_area=_area(Rect2(exit_point-Vector2(25,45),Vector2(50,100)),"Exit")
+	_exit_area.body_entered.connect(_on_exit)
 	_area(Rect2(22,480,30,140),"Entrance").body_entered.connect(_on_entrance)
 	_source_label = _label(definition.source+Vector2(45,-100),"",16)
 	_source_sprite = Sprite2D.new()
@@ -76,10 +94,24 @@ func _ready() -> void:
 		_source_sprite.scale = Vector2.ONE*64.0/_companion_texture.get_height()
 	_source_sprite.position = definition.source+Vector2(0,-45)
 	add_child(_source_sprite)
-	_label(Vector2(110,280),definition.subtitle,38,Color(0.86,0.83,0.68))
-	_label(Vector2(112,335),"%02d / 03    %s"%[AbilityCatalog.REGIONS.find(region_id)+1,definition.title],20,definition.accent)
-	_label(Vector2(112,370),definition.secret,15,Color(0.7,0.76,0.74))
-	var exit_label:=_label(exit_point+Vector2(-100,-115),"救援舱 →" if region_id==&"remnant_sea" else "下一关 →",17)
+	if definition.has("secondary_source"):
+		_secondary_label=_label(definition.secondary_source+Vector2(35,-100),"",16,Color(0.77,0.56,0.94))
+		var orb:=Sprite2D.new()
+		orb.texture=CampaignLevels.trimmed_texture("characters/hero_red")
+		orb.scale=Vector2.ONE*64.0/orb.texture.get_height()
+		orb.position=definition.secondary_source-Vector2(0,45)
+		orb.modulate=Color(0.78,0.65,1)
+		add_child(orb)
+	_label(Vector2(110,405),definition.subtitle,28,Color(0.86,0.83,0.68))
+	_label(Vector2(112,442),"%02d / 03    %s"%[AbilityCatalog.REGIONS.find(region_id)+1,definition.title],18,definition.accent)
+	_label(Vector2(112,472),definition.secret,13,Color(0.7,0.76,0.74))
+	for point: Vector2 in definition.recycling:
+		_label(point+Vector2(-30,-65),"V 循环拆解",13,Color(0.55,0.89,0.75))
+	for node: Dictionary in definition.mineral_nodes:
+		_label(node.point+Vector2(-55,-80),"C 固化毒雾",14,Color(0.55,0.91,0.98))
+	if region_id==&"lone_tree":
+		_label(Vector2(80,535),"A/D 移动 · 空格跳跃\n灯火：检查点",13)
+	var exit_label:=_label(exit_point+Vector2(-110,-115),"真相档案 →" if region_id==&"remnant_sea" else "下一关 →",17)
 	if region_id==&"remnant_sea":
 		exit_label.name="RescueLabel"
 	WorldProgress.world_changed.connect(_refresh_world)
@@ -87,7 +119,7 @@ func _ready() -> void:
 	# A playable campaign needs a starting weapon; formal acquisition remains configurable.
 	if WorldProgress.ability_state(&"light_blade")==WorldProgress.AbilityState.UNAVAILABLE:
 		WorldProgress.borrow_ability(&"light_blade")
-		WorldProgress.set_notice("光刃已就绪：左键短砍，右键长砍。靠近能力源按 E。")
+		WorldProgress.set_notice("地脉提取器已拾取。左键短砍 / 右键长砍；能力源按 E。每次技能都会写入碳账本。")
 	queue_redraw()
 
 
@@ -110,23 +142,37 @@ func _process(delta: float) -> void:
 	for burst in _bursts:
 		burst.life-=delta
 	_bursts = _bursts.filter(func(effect: Dictionary) -> bool: return effect.life>0.0)
+	for temporary in _temporary_platforms:
+		temporary.life-=delta
+		if temporary.life<=0.0 and is_instance_valid(temporary.body):
+			temporary.body.queue_free()
+	_temporary_platforms=_temporary_platforms.filter(func(entry: Dictionary) -> bool: return entry.life>0.0)
 	queue_redraw()
 
 
 func _physics_process(_delta: float) -> void:
 	if not WorldProgress.can_play():
 		return
-	for area in _spike_areas:
-		if area.overlaps_body(player):
-			player.hurt(20)
-	if player.position.distance_to(definition.source)<108.0:
-		if Input.is_action_just_pressed(&"eden_absorb"):
-			WorldProgress.borrow_ability(definition.ability)
-		elif Input.is_action_just_pressed(&"eden_return"):
-			if WorldProgress.returning:
-				WorldProgress.return_ability(definition.ability)
-			else:
-				WorldProgress.set_notice("先前往矿厂救出伙伴，再返程交还能力。")
+	if not WorldProgress.repaired_regions.has(region_id):
+		for area in _spike_areas:
+			if area.overlaps_body(player):
+				player.hurt(20)
+	if WorldProgress.core_reversed and region_id==&"remnant_sea" and player.position.distance_to(definition.exit)<140.0 and Input.is_action_just_pressed(&"eden_return"):
+		if WorldProgress.repair_current_region():
+			WorldProgress.set_notice("3 位居民已共同打通伊甸园公共路线。向左回两个能力源卸下护盾和黑穿。")
+	_interact_source(definition.source,definition.ability)
+	if definition.has("secondary_source"):
+		_interact_source(definition.secondary_source,definition.secondary_ability)
+	if Input.is_action_just_pressed(&"eden_recycle"):
+		for index in definition.recycling.size():
+			if player.position.distance_to(definition.recycling[index])<95.0:
+				var id:=_entity_id("recycle_%d"%index)
+				if CarbonLedger.recycle(id):
+					WorldProgress.collect_once(id)
+					player.stats.add_score(75)
+					SoundManager.play_sfx(&"pickup")
+					WorldProgress.set_notice("循环拆解完成：材料回收 +%.0f kg；矿石替代量为教学估算，见审计报告。"%CarbonLedger.rules.recycled_material_per_node_kg)
+				break
 	if Input.is_action_just_pressed(&"eden_trial_blade") and OS.is_debug_build():
 		WorldProgress.borrow_ability(&"light_blade")
 
@@ -147,9 +193,11 @@ func _on_exit(body: Node2D) -> void:
 	if index<2:
 		WorldProgress.enter_scene(AbilityCatalog.REGIONS[index+1],Vector2(140,596))
 	elif not WorldProgress.is_enemy_defeated(_entity_id("boss")):
-		WorldProgress.set_notice("晶甲监工仍在守卫矿厂，先击败它再打开救援舱。")
+		WorldProgress.set_notice("伊甸守卫仍在保护能源档案，先击败它再揭开真相。")
+	elif WorldProgress.ability_state(&"black_pierce")==WorldProgress.AbilityState.UNAVAILABLE:
+		WorldProgress.set_notice("先在紫色能力源学会黑穿（F），再进入能源档案。")
 	else:
-		WorldProgress.begin_return_journey()
+		WorldProgress.reveal_truth()
 
 
 func _on_entrance(body: Node2D) -> void:
@@ -163,7 +211,7 @@ func _on_entrance(body: Node2D) -> void:
 	elif WorldProgress.returning and WorldProgress.required_returns_complete():
 		GameSession.complete_level()
 	else:
-		WorldProgress.set_notice("向右探索三关，救出伙伴后从这里回家。")
+		WorldProgress.set_notice("向右探索垃圾场、毒雾矿场、伊甸园。选择逆向循环后从这里回家。")
 
 
 func _spawn_enemy(point: Vector2,patrol: Vector2,id: String,boss: bool=false) -> void:
@@ -185,7 +233,15 @@ func _spawn_enemy(point: Vector2,patrol: Vector2,id: String,boss: bool=false) ->
 func _on_enemy_defeated(enemy: CampaignEnemy) -> void:
 	_bursts.append({"position":enemy.position,"life":0.7,"boss":enemy.boss})
 	if enemy.boss:
-		WorldProgress.set_notice("晶甲监工已击败。右侧救援舱已经可以开启。")
+		WorldProgress.set_notice("伊甸守卫已倒下。右侧能源档案已解锁：伊甸园的绿色由谁承担代价？")
+		# A player can land the last hit while already standing in the portal.
+		# Recheck after the hit callback; another body_entered event may never occur.
+		_retry_archive.call_deferred()
+
+
+func _retry_archive() -> void:
+	if is_instance_valid(_exit_area) and is_instance_valid(player) and _exit_area.overlaps_body(player):
+		_on_exit(player)
 
 
 func _spawn_projectile(origin: Vector2,direction: float) -> void:
@@ -217,14 +273,25 @@ func _spawn_shard(point: Vector2,index: int) -> void:
 func _refresh_world() -> void:
 	var ability: StringName=definition.ability
 	var status:=WorldProgress.ability_state(ability)
-	_source_label.text="%s之灵\n%s"%[AbilityCatalog.DEFINITIONS[ability].name,["E  吸收能力","R  交还能力","通路已恢复"][status]]
+	var learned_hint: String="R 与居民修复并卸下" if WorldProgress.core_reversed else "已学会 · 向右寻找真相"
+	_source_label.text="%s之灵\n%s"%[AbilityCatalog.DEFINITIONS[ability].name,["E  吸收能力",learned_hint,"通路已恢复"][status]]
 	_source_label.modulate=definition.accent
 	_source_sprite.modulate=Color(0.65,0.68,0.62) if status==WorldProgress.AbilityState.BORROWED else Color.WHITE
+	(material as ShaderMaterial).set_shader_parameter("bleaching",0.55 if WorldProgress.land_state(region_id)==&"wasted" else 0.0)
+	if _secondary_label!=null:
+		var second_status:=WorldProgress.ability_state(definition.secondary_ability)
+		var second_hint: String="R 卸下黑穿" if WorldProgress.core_reversed else "F 可用 · 向右探索"
+		_secondary_label.text="黑穿 · +200 kg\n%s"%["E 学习 / F 释放",second_hint,"暗壁已拆除"][second_status]
 	var unlocked:=WorldProgress.has_ability(ability) or WorldProgress.route_open(ability)
 	_gate.get_child(0).set_deferred(&"disabled",unlocked)
-	if WorldProgress.route_open(ability) and not _route_ready:
+	if (WorldProgress.route_open(ability) or WorldProgress.repaired_regions.has(region_id)) and not _route_ready:
 		_route_ready=true
 		_install_route.call_deferred()
+	for wall in _dark_bodies:
+		wall.get_child(0).set_deferred(&"disabled",WorldProgress.repaired_regions.has(region_id))
+	if WorldProgress.repaired_regions.has(region_id):
+		for hazard in hazards:
+			hazard.neutralized=true
 	if WorldProgress.returning:
 		_label_mission_return()
 	queue_redraw()
@@ -234,7 +301,58 @@ func _label_mission_return() -> void:
 	# Entrance and exit labels are world-space signposts, never collidable art.
 	var rescue := get_node_or_null("RescueLabel") as Label
 	if rescue != null:
-		rescue.text="伙伴已获救 · 向左返程" if WorldProgress.returning else "救援舱 →"
+		rescue.text="R 居民共建 · 向左返程" if WorldProgress.returning else "真相档案 →"
+
+
+func _interact_source(point: Vector2,ability: StringName) -> void:
+	if player.position.distance_to(point)>=108.0:
+		return
+	if Input.is_action_just_pressed(&"eden_absorb"):
+		WorldProgress.borrow_ability(ability)
+	elif Input.is_action_just_pressed(&"eden_return"):
+		if WorldProgress.core_reversed:
+			WorldProgress.repair_current_region()
+			WorldProgress.return_ability(ability)
+		else:
+			WorldProgress.set_notice("先到伊甸园发现真相，再决定提取器的未来。")
+
+
+func try_mineralize(origin: Vector2,facing: float) -> bool:
+	if not WorldProgress.can_play() or not WorldProgress.has_ability(&"mineralization"):
+		return false
+	for index in definition.mineral_nodes.size():
+		var node: Dictionary=definition.mineral_nodes[index]
+		var id:=_entity_id("mineral_%d"%index)
+		if origin.distance_to(node.point)<145.0 and not WorldProgress.is_collected(id):
+			WorldProgress.collect_once(id)
+			_install_mineral(index)
+			WorldProgress.report_ability_used(&"mineralization")
+			CarbonLedger.store_carbon(id,CarbonLedger.rules.mineral_node_storage_kg)
+			WorldProgress.set_notice("碳矿化 +1 kg；本节点固定 %.0f kg CO₂（游戏模型），晶桥已生成。"%CarbonLedger.rules.mineral_node_storage_kg)
+			return true
+	var rect:=Rect2(origin+Vector2(facing*105.0-64.0,70),Vector2(128,18))
+	var query:=PhysicsShapeQueryParameters2D.new()
+	var shape:=RectangleShape2D.new()
+	shape.size=rect.size
+	query.shape=shape
+	query.transform=Transform2D(0.0,rect.get_center())
+	query.collision_mask=17
+	if not get_world_2d().direct_space_state.intersect_shape(query).is_empty():
+		WorldProgress.set_notice("在空中前方生成临时晶台，或靠近毒雾节点再按 C；无效释放不记排放。")
+		return false
+	var body:=_add_platform(rect)
+	_temporary_platforms.append({"body":body,"rect":rect,"life":4.0})
+	WorldProgress.report_ability_used(&"mineralization")
+	return true
+
+
+func _install_mineral(index: int) -> void:
+	var node: Dictionary=definition.mineral_nodes[index]
+	var rect: Rect2=node.bridge
+	_add_platform(rect)
+	_mineral_platforms.append(rect)
+	if node.hazard>=0:
+		hazards[node.hazard].neutralized=true
 
 
 func _install_route() -> void:
@@ -315,6 +433,26 @@ func _draw() -> void:
 		_paint_platform(rect)
 	for rect: Rect2 in _route_platforms:
 		_paint_platform(rect,true)
+	for rect: Rect2 in _mineral_platforms:
+		_paint_platform(rect,true)
+		draw_line(rect.position,Vector2(rect.end.x,rect.position.y),Color(0.65,0.95,1),3)
+	for entry in _temporary_platforms:
+		draw_rect(entry.rect,Color(0.4,0.83,0.91,minf(0.8,entry.life)))
+	for rect: Rect2 in definition.dark_walls:
+		if not WorldProgress.repaired_regions.has(region_id):
+			draw_rect(rect,Color(0.24,0.08,0.38,0.85))
+			for y in range(int(rect.position.y),int(rect.end.y),25):
+				draw_line(Vector2(rect.position.x,y),Vector2(rect.end.x,y+12),Color(0.71,0.35,0.93),2)
+	for index in definition.mineral_nodes.size():
+		var node: Dictionary=definition.mineral_nodes[index]
+		var converted:=WorldProgress.is_collected(_entity_id("mineral_%d"%index))
+		draw_circle(node.point-Vector2(0,22),20,Color(0.4,0.8,0.87,0.25) if converted else Color(0.49,0.6,0.21,0.36))
+		draw_arc(node.point-Vector2(0,22),25,0,TAU,20,Color(0.49,0.85,0.85) if converted else Color(0.7,0.77,0.28),2)
+	for index in definition.recycling.size():
+		var point: Vector2=definition.recycling[index]
+		var recycled:=WorldProgress.is_collected(_entity_id("recycle_%d"%index))
+		draw_rect(Rect2(point-Vector2(16,22),Vector2(32,32)),Color(0.17,0.38,0.28) if recycled else Color(0.42,0.35,0.22))
+		draw_arc(point-Vector2(0,6),10,0.2,TAU-0.4,12,Color(0.55,0.91,0.67),2)
 	for points: PackedVector2Array in _route_ramps:
 		if _terrain!=null:
 			var bounds:=Rect2(points[0],Vector2.ZERO)
@@ -329,6 +467,9 @@ func _draw() -> void:
 			draw_colored_polygon(points,Color(0.18,0.29,0.22))
 		draw_line(points[0],points[1],Color(0.63,0.78,0.49),8)
 	for rect: Rect2 in definition.spikes:
+		if WorldProgress.repaired_regions.has(region_id):
+			draw_line(Vector2(rect.position.x,rect.end.y-2),Vector2(rect.end.x,rect.end.y-2),Color(0.42,0.83,0.55),4)
+			continue
 		for x in range(int(rect.position.x),int(rect.end.x)-8,14):
 			draw_colored_polygon(PackedVector2Array([Vector2(x,rect.end.y),Vector2(x+7,rect.position.y),Vector2(x+14,rect.end.y)]),Color(0.77,0.36,0.34))
 	var source: Vector2=definition.source
@@ -351,6 +492,13 @@ func _draw() -> void:
 	for burst in _bursts:
 		var progress:=1.0-float(burst.life)/0.7
 		draw_arc(burst.position,8.0+progress*45.0,0,TAU,24,Color(definition.accent,1.0-progress),2)
+	if WorldProgress.repaired_regions.has(region_id):
+		for rect: Rect2 in _platforms:
+			for x in range(int(rect.position.x)+20,int(rect.end.x),67):
+				var stalk:=Vector2(x,rect.position.y)
+				draw_line(stalk,stalk-Vector2(0,13),Color(0.3,0.7,0.3),2)
+				draw_circle(stalk-Vector2(4,9),4,Color(0.46,0.79,0.4))
+				draw_circle(stalk-Vector2(-4,14),4,Color(0.62,0.86,0.46))
 	if _companion_texture!=null:
 		var scale:=38.0/_companion_texture.get_height()
 		var dimensions:=_companion_texture.get_size()*scale

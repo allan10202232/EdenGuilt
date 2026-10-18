@@ -1,5 +1,13 @@
 # 图像生成记录
 
+## eden_garden · 新版第三幕
+
+参考既有森林背景与 shape1 原画，内置 image_gen，`transparent_background=false`。输出：`assets/art/generated/backgrounds/eden_garden.png`。
+
+```text
+Use case: stylized-concept. Production 2D side scrolling metroidvania background, 16:9 panoramic pixel art. Use the attached forest panorama and ivory masked chibi knight as STYLE REFERENCES only: crisp chunky pixels, dark outlines, layered depth. Create EDEN GARDEN, a falsely sustainable privileged city: warm sunlit ivory gothic greenhouse towers and elegant glass biodomes, lush emerald hanging gardens, pale gold sunbeams, immaculate sky bridges in the distance, apparently perfect eternal spring. Restrained hidden dark industrial intake pipes at the very bottom hint that this sanctuary runs on pollution exported elsewhere. Rich layered painterly PIXEL ART consistent with the reference, not smooth vector art or 3D. Side-on orthographic decorative backdrop only, clear central/lower gameplay area; no foreground gameplay floor, no characters, no enemies, no labels, no text, no UI, no watermark. Seam-friendly horizontal edges. Keep bright structure detail in distant planes, high readability for small characters.
+```
+
 使用 Codex 内置 image_gen，以 `assets/art/originals/` 原画为参考；输出复制至 `assets/art/generated/`。
 角色仅请求背景透明化，其余为风格参考生成。所有角色/敌人调用使用 `transparent_background=true`，背景/地形为 `false`。
 背景和地形参考矿洞 JPG 及两张角色 PNG；敌人参考两张角色 PNG；角色编辑仅引用各自原 PNG。

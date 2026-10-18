@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/art/generated/backgrounds/forest.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/art/generated/backgrounds/junkyard.png" id="2"]
 [ext_resource type="Texture2D" path="res://assets/art/generated/characters/hero_red.png" id="3"]
 
 [node name="MainMenu" type="Control"]
@@ -77,7 +77,7 @@ layout_mode = 2
 
 [node name="Description" type="Label" parent="Margin/Columns/Identity"]
 layout_mode = 2
-text = "借走能力，走向荒芜。\n交还能力，带伙伴回家。\n\n森林  /  垃圾场  /  矿厂"
+text = "你获得的每一份力量，都留下一笔账。\n伊甸园的春天，究竟由谁承担？\n\n垃圾场  /  毒雾矿场  /  伊甸园"
 theme_override_colors/font_color = Color(0.6, 0.68, 0.69, 1)
 theme_override_constants/line_spacing = 10
 
@@ -85,7 +85,7 @@ theme_override_constants/line_spacing = 10
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.45, 0.54, 0.56, 1)
-text = "THREE REALMS · ONE WAY HOME\n横版动作探索 · 三关试玩版"
+text = "EVERY POWER LEAVES A FOOTPRINT\n实时碳账本 · 双结局 · 可持续行为审计"
 
 [node name="Panel" type="PanelContainer" parent="Margin/Columns"]
 custom_minimum_size = Vector2(375, 0)
@@ -121,7 +121,7 @@ text = "近战模板测试"
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 theme_override_constants/line_spacing = 8
-text = "A / D 或 ← / →  移动\n空格跳跃 · Shift 快跑 / 冲刺\nQ 护盾 · 左键短砍 / 右键长砍\n靠近能力源：E 吸收 / R 交还\n灯火保存检查点，死亡可继续\n击败矿厂监工后，交还能力回家"
+text = "A / D 移动 · 空格跳跃 · Shift 快跑\n左键短砍 / 右键长砍\nE 学习 · C 碳矿化 · Q 护盾 · F 黑穿\nV 循环拆解 · R 与居民修复 / 卸下能力\n精准节奏提高能效，连发积累废热\n在伊甸园发现真相，选择结局 A / B"
 
 [node name="Note" type="Label" parent="Margin/Columns/Panel/Actions"]
 layout_mode = 2

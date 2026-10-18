@@ -18,8 +18,9 @@ config/icon="res://icon.svg"
 [autoload]
 
 GameSession="*res://autoload/game_session.gd"
-WorldProgress="*res://autoload/world_progress.gd"
 SoundManager="*res://autoload/sound_manager.gd"
+WorldProgress="*res://autoload/world_progress.gd"
+CarbonLedger="*res://autoload/carbon_ledger.gd"
 
 [display]
 

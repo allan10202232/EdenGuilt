@@ -15,11 +15,14 @@ var _jumps_used: int = 0
 var _dash_remaining: float = 0.0
 var _dash_recovery: float = 0.0
 var _facing: float = 1.0
-var _art: Sprite2D
-var _art_scale: Vector2
-var _walk_clock: float = 0.0
+var _art: HeroActionVisual
 var _coyote: float = 0.0
 var _jump_buffer: float = 0.0
+var _mineral_recovery: float = 0.0
+var _pierce_recovery: float = 0.0
+var _pierce_flash: float = 0.0
+var _shield_time: float = 0.0
+var _shield_recovery: float = 0.0
 
 
 func _ready() -> void:
@@ -28,13 +31,18 @@ func _ready() -> void:
 		WorldProgress.report_ability_used(&"light_blade")
 	)
 	if campaign_character:
+		collision_mask = 17
 		combat.close_attack.show_hitbox = false
 		combat.reach_attack.show_hitbox = false
+		combat.close_attack.show_placeholder_weapon = false
+		combat.reach_attack.show_placeholder_weapon = false
+		combat.close_attack.obstruction_mask = 17
+		combat.reach_attack.obstruction_mask = 17
 		for part in ["Cape", "Body", "Visor"]:
 			get_node(part).hide()
-		_art = Sprite2D.new()
-		_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_art = HeroActionVisual.new()
 		add_child(_art)
+		_art.bind(self)
 		_update_character()
 		WorldProgress.world_changed.connect(_update_character)
 
@@ -42,11 +50,7 @@ func _ready() -> void:
 func _update_character() -> void:
 	if _art == null:
 		return
-	_art.texture = CampaignLevels.trimmed_texture("characters/hero_green" if WorldProgress.returning else "characters/hero_red")
-	if _art.texture != null:
-		_art_scale = Vector2.ONE * 78.0 / _art.texture.get_height()
-		_art.scale = _art_scale
-	_art.position = Vector2(0, -15)
+	_art.set_form(WorldProgress.core_reversed)
 
 
 func _can_melee_attack() -> bool:
@@ -65,7 +69,13 @@ func _physics_process(delta: float) -> void:
 	modulate.a = 0.45 if _invulnerability > 0.0 and int(_invulnerability * 15.0) % 2 else 1.0
 	_dash_remaining = maxf(0.0, _dash_remaining - delta)
 	_dash_recovery = maxf(0.0, _dash_recovery - delta)
+	_mineral_recovery=maxf(0.0,_mineral_recovery-delta)
+	_pierce_recovery=maxf(0.0,_pierce_recovery-delta)
+	_pierce_flash=maxf(0.0,_pierce_flash-delta)
+	_shield_time=maxf(0.0,_shield_time-delta)
+	_shield_recovery=maxf(0.0,_shield_recovery-delta)
 	var axis := Input.get_axis(&"eden_move_left", &"eden_move_right")
+	var was_on_floor:=is_on_floor()
 	if axis != 0.0:
 		_facing = signf(axis)
 	var running := Input.is_action_pressed(&"eden_run")
@@ -81,9 +91,10 @@ func _physics_process(delta: float) -> void:
 	if is_on_floor():
 		_jumps_used = 0
 		_coyote = 0.10
-	elif _jumps_used == 0:
-		_jumps_used = 1
+	else:
 		_coyote = maxf(0.0, _coyote-delta)
+		if _jumps_used==0:
+			_jumps_used=1
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
 	var jump_limit := 2 if WorldProgress.has_ability(&"double_jump") else 1
@@ -99,18 +110,34 @@ func _physics_process(delta: float) -> void:
 		velocity.y = JUMP_SPEED
 		if _jumps_used == 2:
 			WorldProgress.report_ability_used(&"double_jump")
+			if _art!=null: _art.play_action(&"double_jump",0.22)
 		else:
 			SoundManager.play_sfx(&"jump", -10.0)
+			if _art!=null: _art.play_action(&"jump",0.10)
 	var was_shielded := WorldProgress.shield_active
-	WorldProgress.set_shield_active(Input.is_action_pressed(&"eden_shield"))
+	if campaign_character:
+		# Releasing ends this cast. A new press must pass the cooldown and be billed.
+		if not Input.is_action_pressed(&"eden_shield"):
+			_shield_time=0.0
+		if Input.is_action_just_pressed(&"eden_shield") and _shield_recovery<=0.0 and WorldProgress.has_ability(&"shield"):
+			_shield_time=1.4
+			_shield_recovery=2.2
+			combat.cancel()
+			if _art!=null: _art.play_action(&"shield_raise",0.10)
+			WorldProgress.report_ability_used(&"shield")
+		WorldProgress.set_shield_active(Input.is_action_pressed(&"eden_shield") and _shield_time>0.0)
+	else:
+		WorldProgress.set_shield_active(Input.is_action_pressed(&"eden_shield"))
 	if WorldProgress.shield_active and not was_shielded:
-		WorldProgress.report_ability_used(&"shield")
+		if not campaign_character:
+			WorldProgress.report_ability_used(&"shield")
+	if campaign_character and Input.is_action_just_pressed(&"eden_mineralize"):
+		try_mineralize()
+	if campaign_character and Input.is_action_just_pressed(&"eden_black_pierce"):
+		try_black_pierce()
 	move_and_slide()
-	if _art != null:
-		_walk_clock += delta * absf(velocity.x) * 0.075
-		_art.flip_h = _facing<0.0
-		_art.position.y = -15.0 + (sin(_walk_clock)*2.0 if is_on_floor() and absf(velocity.x)>5.0 else 0.0)
-		_art.rotation = clampf(velocity.x/9000.0,-0.08,0.08) if is_on_floor() else _facing*0.08
+	if _art!=null and is_on_floor() and not was_on_floor:
+		_art.play_action(&"land",0.10)
 	queue_redraw()
 	if global_position.y > death_height:
 		GameSession.player_died(&"fall")
@@ -128,13 +155,63 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _draw() -> void:
+	if _pierce_flash>0.0:
+		draw_line(Vector2(-_facing*160,0),Vector2.ZERO,Color(0.53,0.2,0.85,_pierce_flash*2.0),14)
 	if WorldProgress.shield_active:
 		draw_arc(Vector2.ZERO, 35.0, 0.0, TAU, 32, Color(0.45, 0.8, 0.95), 3.0)
 
 
 func hurt(amount: int) -> void:
-	if _invulnerability > 0.0 or not WorldProgress.can_play() or WorldProgress.shield_active or _dash_remaining>0.0:
+	if _invulnerability > 0.0 or not WorldProgress.can_play() or WorldProgress.shield_active or _dash_remaining>0.0 or _pierce_flash>0.0:
 		return
 	_invulnerability = 0.85
+	combat.cancel()
+	if _art!=null: _art.play_action(&"hurt",0.22)
 	SoundManager.play_sfx(&"hurt")
 	stats.take_damage(amount)
+
+
+func try_mineralize() -> bool:
+	if not campaign_character or _mineral_recovery>0.0 or not WorldProgress.can_play() or not WorldProgress.has_ability(&"mineralization"):
+		return false
+	var level:=get_parent() as CampaignLevel
+	if level==null or not level.try_mineralize(global_position,_facing):
+		return false
+	_mineral_recovery=0.8
+	combat.cancel()
+	if _art!=null: _art.play_action(&"mineralization",0.35)
+	return true
+
+
+func try_black_pierce() -> bool:
+	if not campaign_character or _pierce_recovery>0.0 or not WorldProgress.can_play() or not WorldProgress.has_ability(&"black_pierce"):
+		return false
+	var previous_mask:=collision_mask
+	collision_mask=1
+	var motion:=Vector2(_facing*240.0,0)
+	var collision:=KinematicCollision2D.new()
+	if test_move(global_transform,motion,collision):
+		motion=collision.get_travel()
+	# Never finish inside a special wall, even when a wall is wider than the cast.
+	var shape: Shape2D=$Collision.shape
+	var query:=PhysicsShapeQueryParameters2D.new()
+	query.shape=shape
+	query.collision_mask=16
+	query.exclude=[get_rid()]
+	var destination:=global_position+motion
+	for index in 49:
+		query.transform=Transform2D(0.0,destination)
+		if get_world_2d().direct_space_state.intersect_shape(query).is_empty():
+			break
+		destination=global_position+motion*(1.0-float(index+1)/48.0)
+	collision_mask=previous_mask
+	if absf(destination.x-global_position.x)<12.0:
+		WorldProgress.set_notice("普通地形会挡住黑穿；无有效位移不记排放。")
+		return false
+	global_position=destination
+	combat.cancel()
+	if _art!=null: _art.play_action(&"black_pierce",0.20)
+	_pierce_recovery=1.3
+	_pierce_flash=0.20
+	WorldProgress.report_ability_used(&"black_pierce")
+	return true

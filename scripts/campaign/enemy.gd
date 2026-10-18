@@ -53,7 +53,7 @@ func _physics_process(delta: float) -> void:
 	if not WorldProgress.can_play() or health <= 0 or not is_instance_valid(player):
 		return
 	_clock += delta
-	_attack_cooldown -= delta
+	_attack_cooldown -= delta*(1.45 if is_enraged() else 1.0)
 	_stun = maxf(0.0,_stun-delta)
 	if position.x < patrol.x:
 		_direction = 1.0
@@ -70,7 +70,7 @@ func _physics_process(delta: float) -> void:
 			else:
 				projectile_fired.emit(global_position+Vector2(_direction*24,-8),_direction)
 	elif _stun <= 0.0:
-		velocity.x = _direction * (70.0 if boss else 48.0 if kind == "crystal_miner" else 66.0)
+		velocity.x = _direction * (70.0 if boss else 48.0 if kind == "crystal_miner" else 66.0)*(1.4 if is_enraged() else 1.0)
 		if _attack_cooldown <= 0.0 and absf(distance.x) < (270.0 if boss else 430.0) and absf(distance.y)<100.0 and (boss or kind=="scrap_scavenger"):
 			_direction = signf(distance.x) if distance.x != 0.0 else _direction
 			_windup = 0.75 if boss else 0.55
@@ -81,10 +81,10 @@ func _physics_process(delta: float) -> void:
 		velocity.y = -260.0
 	move_and_slide()
 	_skin.flip_h = _direction > 0.0
-	_skin.modulate = Color(1.0,0.6,0.6) if _stun>0.0 else Color.WHITE
+	_skin.modulate = Color(1.0,0.6,0.6) if _stun>0.0 else Color(1.0,0.7,0.63) if is_enraged() else Color.WHITE
 	_skin.position.y = (-18.0 if boss else -11.0)+sin(_clock*7.0)*1.5
 	if _hurtbox.overlaps_body(player):
-		player.hurt(25 if boss else 15)
+		player.hurt((25 if boss else 15)+(5 if is_enraged() else 0))
 	queue_redraw()
 
 
@@ -105,13 +105,19 @@ func receive_melee_hit(hit: Dictionary) -> bool:
 	return true
 
 
+func is_enraged() -> bool:
+	return CarbonLedger.climate_stage()>=2
+
+
 func _draw() -> void:
 	if _skin == null or _skin.texture == null:
 		draw_rect(Rect2(-17,-20,34,40),Color(0.6,0.3,0.35))
 	if boss:
 		draw_rect(Rect2(-80,-112,160,7),Color(0.05,0.05,0.08))
 		draw_rect(Rect2(-80,-112,160.0*health/max_health,7),Color(0.83,0.3,0.32))
-		draw_string(ThemeDB.fallback_font,Vector2(-55,-122),"矿厂 · 晶甲监工",HORIZONTAL_ALIGNMENT_LEFT,-1,16,Color(0.95,0.84,0.63))
+		draw_string(ThemeDB.fallback_font,Vector2(-55,-122),"伊甸园 · 能源守卫",HORIZONTAL_ALIGNMENT_LEFT,-1,16,Color(0.95,0.84,0.63))
+	if is_enraged():
+		draw_circle(Vector2(0,-80 if boss else -54),4,Color(1,0.26,0.18))
 	if _windup>0.0:
 		var tint:=Color(0.95,0.54,0.17,0.18)
 		draw_rect(Rect2(-250 if boss else -35,16,500 if boss else 70,8),tint)

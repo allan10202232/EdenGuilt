@@ -22,11 +22,14 @@
 | `backgrounds/forest.png` | 绿青色古林和废墟，横向视差背景 |
 | `backgrounds/junkyard.png` | 橙锈色机械墓场，横向视差背景 |
 | `backgrounds/mine.png` | 蓝紫晶矿与冶炼厂，横向视差背景 |
+| `backgrounds/eden_garden.png` | 新版伊甸园：明亮温室与白金高塔，底部暗藏工业管线；内置 image_gen 参考旧素材生成 |
 | `enemies/forest_crawler.png` | 透明苔藓爬兽 |
 | `enemies/scrap_scavenger.png` | 透明机械拾荒者 |
-| `enemies/crystal_miner.png` | 透明晶矿兽；Boss 复用放大版 |
+| `enemies/crystal_miner.png` | 透明晶矿兽，现用于毒雾矿场 |
 | `characters/hero_red.png` | shape1 的透明背景版本 |
 | `characters/hero_green.png` | shape2 的透明背景版本 |
+| `animations/hero_red_actions.png` | 红色形态 24 帧动作，6×4 格 |
+| `animations/hero_green_actions.png` | 绿色形态 24 帧动作，6×4 格 |
 | `terrain/biome_atlas.png` | 两列三行图集：森林、垃圾场、矿厂；左列地表，右列填充 |
 
 PNG 透明通道已在 Godot 实际加载验证。角色与敌人使用 AtlasTexture 的有效像素区域裁边，源 PNG 不改写。
@@ -34,4 +37,9 @@ PNG 透明通道已在 Godot 实际加载验证。角色与敌人使用 AtlasTex
 
 替换同路径 PNG 后重新导入即可。更改地形图集时维持 2 × 3 布局；图集左列顶部四分之一用作地表。
 修改角色或敌人外观不会自动改变碰撞体：玩家 28×48，小怪 34×40，Boss 72×88 px，需要在玩法脚本单独调整。
-现阶段角色与敌人为静态透明图，代码提供朝向、轻微摆动、受击与攻击预警；逐帧动画由后续美术接入。
+主战役角色改用 24 帧动作图集；固定格取帧并按脚底基准校正位置，原透明单图仍供能力源与居民使用。
+动作及帧布局见 [动作说明](../../docs/character-actions.md)，内置 image_gen 的完整提示词见 [动作生成记录](../../docs/character-action-prompts.md)。
+敌人仍使用静态透明图，保留移动、受击与攻击预警反馈。
+
+新版三关复用图集：垃圾场用第 2 行、矿场用第 3 行、伊甸园用第 1 行；伊甸守卫暂复用放大的苔藓兽。
+原森林背景保留为可复用美术，不再作为第一关入口。

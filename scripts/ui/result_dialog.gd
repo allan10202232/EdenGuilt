@@ -15,6 +15,8 @@ func present(result: Dictionary) -> void:
 		result.get("score", 0), result.get("health", 0),
 		result.get("max_health", 100), result.get("elapsed_seconds", 0.0),
 	]
+	if result.has("audit"):
+		%Summary.text+="\n累计排放 %.2f kg CO₂ · 已固定 %.2f kg"%[result.audit.gross_kg,result.audit.stored_kg]
 	%CheckpointButton.visible = not won
 	%CheckpointButton.text = "从%s检查点继续" % result.get("checkpoint", "孤木")
 	%RecoveryNote.visible = not won
