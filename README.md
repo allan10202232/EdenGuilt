@@ -7,10 +7,14 @@
 
 ## 打开和试玩
 
-在 Godot 导入根目录 `project.godot`，按 **F5**，点击“开始游戏”。
+在 Godot 导入根目录 `project.godot`，按 **F5**，先播放四幕英文像素开场。
+每按一次 **Enter** 推进一句旁白：吸魂器 → 伊甸环城 → 地下矿区 → 拾起吸魂器；最后一句后按 Enter 直接进入第一关。
+前三幕逐像素显现，第四幕缓慢淡入，幕间逐像素消散。长按 Enter 不会连续跳过旁白，转场期间不接受重复推进。
+从死亡/结局界面返回主菜单后，可点击“开始游戏”直接重玩；重新运行项目会重播开场。
 
 | 操作 | 输入 |
 | --- | --- |
+| 开场旁白 / 下一幕 / 开始游戏 | Enter（也支持小键盘 Enter） |
 | 左右移动 | A / D 或 ← / → |
 | 跳跃 / 已获得后的二段跳 | 空格 |
 | 快跑 | 按住 Shift |
@@ -86,6 +90,8 @@ Q/E/R 和 F 黑穿的映射已由用户确认；光刃在试玩版开局提供�
 角色红、绿双形态各有 24 帧：待机、跑步、跳跃、二段跳、下落、落地、短砍、长砍、举盾、施法、黑穿、受击和倒地。
 近战动作跟随真实判定阶段，命中有刀光与火花；详见 [动作与回归记录](docs/character-actions.md)。
 完整提示词见 [场景生成记录](docs/art-generation-prompts.md) 和 [动作生成记录](docs/character-action-prompts.md)。
+开场四幅插画、参考图与完整提示词见 [开场美术记录](docs/opening-art-prompts.md)；
+旁白和播放节奏集中在 `scripts/ui/opening_cinematic.gd`，入口为 `scenes/opening.tscn`。
 
 ## 近战攻击模板
 
@@ -112,7 +118,7 @@ Q/E/R 和 F 黑穿的映射已由用户确认；光刃在试玩版开局提供�
 .\tests\run-tests.ps1 -Godot 'C:\Tools\Godot_v4.7.2-stable_win64_console.exe'
 ```
 
-增加 `-Screenshots` 会启用真实渲染并保存主菜单、HUD、死亡、三关、Boss、返程、胜利及近战和角色动作截图：
+增加 `-Screenshots` 会启用真实渲染并保存开场、主菜单、HUD、死亡、三关、Boss、返程、胜利及近战和角色动作截图：
 
 ```powershell
 .\tests\run-tests.ps1 -Godot 'C:\Tools\Godot_v4.7.2-stable_win64_console.exe' -Screenshots
@@ -122,6 +128,8 @@ Q/E/R 和 F 黑穿的映射已由用户确认；光刃在试玩版开局提供�
 
 ```text
 godot --headless --path . --editor --import --quit
+godot --headless --path . --audio-driver Dummy res://tests/startup_test.tscn
+godot --headless --path . --audio-driver Dummy res://tests/opening_test.tscn
 godot --headless --path . --audio-driver Dummy res://tests/phase_one_test.tscn
 godot --headless --path . --audio-driver Dummy res://tests/melee_test.tscn
 godot --headless --path . --audio-driver Dummy res://tests/carbon/carbon_test.tscn
@@ -133,7 +141,9 @@ godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/campai
 
 验收程序在检查失败、引擎错误或警告时返回非零退出码；仅允许引擎提示忽略 `prototype/` 嵌套工程的已知警告。
 生成的导入缓存、日志和截图位于已忽略的 `.godot/`、`test-output/`。
-本次回归共 480 项通过，包含正常输入、真实伤害与敌人 AI 的 A/B 完整试玩；详见 [试玩与卡点检查](docs/walkthrough-review.md)。
+开场接入后的无窗口回归共 562 项通过，包含开场、正常输入、真实伤害与敌人 AI 的 A/B 完整试玩；原有试玩记录见 [试玩与卡点检查](docs/walkthrough-review.md)。
+开场另经真实渲染检查，98 项通过；已查看像素显现、英文长句、地下矿区与最后一幕淡入的实际截图。
+开场验收覆盖八句旁白顺序、长按/转场输入、窗口缩放、四张图片加载，以及最后一次 Enter 仅启动一局游戏。
 HUD 持续显示当前目标；居民共建后的危险区解除，守卫在入口内被击败时也会正确触发真相剧情。
 入口另经全新目录、不带 `.godot/` 缓存的导入与启动检查。
 

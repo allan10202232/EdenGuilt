@@ -63,6 +63,18 @@ try {
     ) -LogPath $startupLog -Summary 'STARTUP'
     Write-Host "Startup configuration passed. Log: $startupLog"
 
+    $openingLog = Join-Path $outputDirectory $(if ($Screenshots) { 'opening-visual.log' } else { 'opening-headless.log' })
+    $openingArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $openingLog)
+    if ($Screenshots) {
+        $openingArguments += @('--rendering-method', 'gl_compatibility')
+    } else {
+        $openingArguments += '--headless'
+    }
+    $openingArguments += 'res://tests/opening_test.tscn'
+    if ($Screenshots) { $openingArguments += @('--', '--screenshots') }
+    Invoke-GodotCheck -EngineArguments $openingArguments -LogPath $openingLog -Summary 'OPENING'
+    Write-Host "Opening cinematic passed. Log: $openingLog"
+
     $testLog = Join-Path $outputDirectory $(if ($Screenshots) { 'phase-one-visual.log' } else { 'phase-one-headless.log' })
     $engineArguments = @('--path', $projectDirectory, '--audio-driver', 'Dummy', '--log-file', $testLog)
     if ($Screenshots) {
