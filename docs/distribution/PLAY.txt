@@ -1,0 +1,36 @@
+EdenGuilt · The Cost of Paradise
+Windows 64 位独立试玩版 / Windows x64 standalone build
+
+开始游戏
+1. 如果收到的是 ZIP，请先全部解压。
+2. 双击 EdenGuilt.exe。无需安装 Godot、Python 或其他开发工具。
+3. 开场按 Enter 逐句推进，最后进入第一关。
+
+本版本包含开场、垃圾场、毒雾矿坑、伊甸城及现有结局。
+图片、声音和关卡已内置在 EXE 中。可以离线运行。
+在 Settings 中切换 English / 简体中文。
+
+基本操作
+A / D 或方向键：移动
+空格：跳跃；取得能力后可二段跳
+E：在能力源吸取；第二关后也可矿化毒雾
+鼠标左键：轻击；鼠标右键：重击
+Q / K：第三关取得能力后持盾、精准弹反
+Shift / L / F：取得能力后黑冲
+T：交互 / 对话
+R：返程时共同修复、交还能力
+下 + 空格：第三关向下穿过平台
+
+提示
+本原型暂不提供退出程序后继续关卡的存档；语言设置会保留。
+死亡时可以从检查点继续。退出窗口会结束本次游玩。
+需要 Windows 10 / 11 64 位和支持 OpenGL 3.3 的显卡驱动。
+
+English
+Extract the ZIP, then double-click EdenGuilt.exe. No Godot installation is required.
+Press Enter through the prologue. Change language in Settings.
+The build contains all three current chapters and endings; it works offline.
+Progress is kept for the current session only. Language preferences are saved.
+
+Engine notices: GODOT-LICENSE.txt and GODOT-THIRD-PARTY.txt.
+Godot Engine: https://godotengine.org/license/
